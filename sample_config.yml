@@ -1,0 +1,10 @@
+s3:
+    # https://wasabi.com/
+    access_key_id: "YOUR_ACCESS_KEY_ID"
+    secret_access_key: "YOUR_SECRET_ACCESS_KEY"
+    default_bucket: "bills"
+    endpoint: "https://s3.wasabisys.com"
+    region: "us-east-1"
+congress:
+    # https://api.congress.gov/sign-up/
+    api_key: "YOUR_API_KEY"
