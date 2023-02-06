@@ -99,5 +99,5 @@ if __name__ == "__main__":
 		bill_text = json.dumps(bill)
 		
 		print("Uploading: %s" % key)
-		save_local(key=key, body=bill_text)
-		upload_file(config=config['s3'], key="local/%s" % key, body=bill_text)
+		save_local(key="local/%s" % key, body=bill_text)
+		upload_file(config=config['s3'], key=key, body=bill_text)
