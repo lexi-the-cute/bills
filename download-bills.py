@@ -57,8 +57,8 @@ def get_bills(config: dict):
 		rate_limit, rate_limit_remaining = get_rate_limit(response)
 		if response.status_code != 200:
 			print(results["error"]["message"])
-			print("Waiting 10 Minutes To Try Again...")
-			time.sleep(60*10)
+			print("Waiting 60 Minutes To Try Again...")
+			time.sleep(60*60)
 			
 			response = requests.get(url=url)
 			results = response.json()
@@ -85,8 +85,8 @@ def get_bills(config: dict):
 			
 			if "error" in data:
 				print(data["error"]["message"])
-				print("Waiting 10 Minutes To Try Again...")
-				time.sleep(60*10)
+				print("Waiting 60 Minutes To Try Again...")
+				time.sleep(60*60)
 			
 				data = get_bill(url=bill["url"], api_key=config["api_key"])
 			
