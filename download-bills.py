@@ -3,6 +3,7 @@ import yaml
 import json
 import boto3
 import requests
+import humanize
 
 def load_config():
 	with open('config.yml', 'r') as fi:
@@ -47,15 +48,23 @@ def get_bills(config: dict):
 		if ("next" not in results["pagination"]):
 			loop = False
 		
+		total = results["pagination"]["count"]
+		count = offset-1
+		
 		for bill in results["bills"]:
-			data = get_bill(url=bill["url"], api_key=config["api_key"])
-			session = data["request"]["congress"]
-			bill_type = data["request"]["billType"]
-			bill_number = data["request"]["billNumber"]
-			
+			count += 1
+			session = bill["congress"]
+			bill_type = bill["type"].lower()
+			bill_number = bill["number"]
 			key = "usa/federal/congress/bills/%s/%s/%s/data.json" % (session, bill_type, bill_number)
 			
-			yield key, data
+			# TODO: Make Better Restart Check
+			if (os.path.exists("local/%s" % key)):
+				continue
+			
+			data = get_bill(url=bill["url"], api_key=config["api_key"])
+			
+			yield key, data, count, total
 
 		offset += limit
 	
@@ -87,7 +96,7 @@ if __name__ == "__main__":
 	config = load_config()
 	s3 = load_s3_client(config['s3'])
 	
-	for key, bill in get_bills(config['congress']):
+	for key, bill, count, total in get_bills(config['congress']):
 		# usa/federal/congress/bills/$congress/$billType/$billNumber/data.json
 		# usa/federal/congress/bills/$congress/$billType/$billNumber/actions/$page.json
 		# usa/federal/congress/bills/$congress/$billType/$billNumber/committees.json
@@ -98,6 +107,6 @@ if __name__ == "__main__":
 		
 		bill_text = json.dumps(bill)
 		
-		print("Uploading: %s" % key)
+		print("Uploading (%s, %s): %s" % (humanize.intcomma(count), humanize.intcomma(total), key))
 		save_local(key="local/%s" % key, body=bill_text)
 		upload_file(config=config['s3'], key=key, body=bill_text)
