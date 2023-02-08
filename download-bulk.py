@@ -2,7 +2,6 @@ import os
 import json
 import requests
 
-# /bulkdata/BILLSTATUS/108/hr/BILLSTATUS-108hr4693.xml
 base_url: str = "https://www.govinfo.gov/bulkdata/json"
 
 headers: dict = {
@@ -40,20 +39,21 @@ def crawl_bulk_download(url: str):
 	for section in results["files"]:
 		# Temporary Resume Solution
 		# TODO: If continuing this script, clean it up
+		# /bulkdata/BILLSTATUS/108/s/BILLSTATUS-108s603.xml
 		if section["justFileName"] == "BILLSTATUS":
 			#print("Step 1")
 			skip = False
 		elif section["justFileName"] == "108":
 			#print("Step 2")
 			skip = False
-		elif section["justFileName"] == "hconres":
+		elif section["justFileName"] == "s":
 			#print("Step 3 - %s" % noskipagain)
+			#noskipagain = True
+			skip = False
+		elif section["justFileName"] == "BILLSTATUS-108s603.xml":
+			#print("Step 4")
 			noskipagain = True
 			skip = False
-		#elif section["justFileName"] == "BILLSTATUS-108hr998.xml":
-			#print("Step 4")
-			#noskipagain = True
-			#skip = False
 		else:
 			if not noskipagain:
 				#print("Step 4 - %s/%s" % (skip, noskipagain))

@@ -3,6 +3,7 @@ import yaml
 import json
 import time
 import boto3
+import random
 import requests
 import humanize
 
@@ -44,13 +45,29 @@ def get_rate_limit(response):
 	
 	return rate_limit, rate_limit_remaining
 
+def get_api_key(config):
+	#return config["api_key"]
+	
+	#return random.choice(config["keys"])
+	
+	total = len(config["keys"])
+	current = 0
+	while True:
+		yield config["keys"][current]
+		
+		if current >= total-1:
+			current = 0
+		else:
+			current += 1
+
 def get_bills(config: dict):
 	offset: int = 0
 	limit: int = 250
 	loop: bool = True
 	
+	global api_key
 	while loop:
-		url = "https://api.congress.gov/v3/bill?api_key=%s&offset=%s&limit=%s&format=json" % (config["api_key"], offset, limit)
+		url = "https://api.congress.gov/v3/bill?api_key=%s&offset=%s&limit=%s&format=json" % (next(api_key), offset, limit)
 		response = requests.get(url=url)
 		results = response.json()
 		
@@ -81,14 +98,14 @@ def get_bills(config: dict):
 			if (os.path.exists("local/%s" % key)):
 				continue
 			
-			data = get_bill(url=bill["url"], api_key=config["api_key"])
+			data = get_bill(url=bill["url"], api_key=next(api_key))
 			
 			if "error" in data:
 				print(data["error"]["message"])
 				print("Waiting 60 Minutes To Try Again...")
 				time.sleep(60*60)
 			
-				data = get_bill(url=bill["url"], api_key=config["api_key"])
+				data = get_bill(url=bill["url"], api_key=next(api_key))
 			
 			yield key, data, count, total
 
@@ -127,6 +144,10 @@ def get_bill_titles(url: str, api_key: str):
 if __name__ == "__main__":
 	config = load_config()
 	s3 = load_s3_client(config['s3'])
+	
+	api_key = get_api_key(config["congress"])
+	#for item in get_api_key(config["congress"]):
+		#print(item)
 	
 	for key, bill, count, total in get_bills(config['congress']):
 		# usa/federal/congress/bills/$congress/$billType/$billNumber/data.json
