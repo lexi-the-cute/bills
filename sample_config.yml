@@ -7,4 +7,8 @@ s3:
     region: "us-east-1"
 congress:
     # https://api.congress.gov/sign-up/
-    api_key: "YOUR_API_KEY"
+    # 6 Keys Works Fine Without Stopping
+    keys:
+        - "YOUR_FIRST_API_KEY"
+        - "YOUR_SECOND_API_KEY"
+        - "YOUR_THIRD_API_KEY"
