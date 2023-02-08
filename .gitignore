@@ -3,3 +3,4 @@ venv
 config.yml
 local/
 bulk/
+local.zip
