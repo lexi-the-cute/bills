@@ -120,7 +120,7 @@ class CommitteeReportStub:
 	def __str__(self):
 		return f"<CommitteeReportStub:{self.citation}>"
 
-class CBOCostEstimate:
+class CBOCostEstimateStub:
 	def __init__(self, publishDate, title, url):
 		self.publishDate = publishDate
 		self.title = title
@@ -136,8 +136,9 @@ class CBOCostEstimate:
 		self.url = url
 	
 	def __str__(self):
-		return f"<CBOCostEstimate:{self.title}>"
+		return f"<CBOCostEstimateStub:{self.title}>"
 
+# TODO: Determine if I should consider this a stub
 class Sponsor:
 	def __init__(self, bioguideId, fullName, party):
 		self.bioguideId = bioguideId
@@ -234,7 +235,7 @@ def createBill(data: dict):
 	if "cboCostEstimates" in item:
 		cboCostEstimates: list = []
 		for cboCostEstimateData in item["cboCostEstimates"]:
-			cboCostEstimate = CBOCostEstimate(cboCostEstimateData["pubDate"], cboCostEstimateData["title"], cboCostEstimateData["url"])
+			cboCostEstimate = CBOCostEstimateStub(cboCostEstimateData["pubDate"], cboCostEstimateData["title"], cboCostEstimateData["url"])
 			
 			cboCostEstimates.append(cboCostEstimate)
 			
