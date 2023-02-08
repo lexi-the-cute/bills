@@ -111,8 +111,32 @@ class CommitteeReportStub:
 		self.citation = citation
 		self.url = url
 	
+	def setCitation(citation):
+		self.citation = citation
+		
+	def setURL(url):
+		self.url = url
+	
 	def __str__(self):
 		return f"<CommitteeReportStub:{self.citation}>"
+
+class CBOCostEstimate:
+	def __init__(self, publishDate, title, url):
+		self.publishDate = publishDate
+		self.title = title
+		self.url = url
+	
+	def setPublishDate(publishDate):
+		self.publishDate = publishDate
+	
+	def setTitle(title):
+		self.title = title
+		
+	def setURL(url):
+		self.url = url
+	
+	def __str__(self):
+		return f"<CBOCostEstimate:{self.title}>"
 
 class Sponsor:
 	def __init__(self, bioguideId, fullName, party):
@@ -157,6 +181,9 @@ class Note:
 	def __init__(self, text):
 		self.text = text
 	
+	def setText(self, text):
+		self.text = text
+	
 	def __str__(self):
 		return f"<Note:{self.text}>"
 
@@ -187,11 +214,42 @@ def createBill(data: dict):
 	if "updateDateIncludingText" in item:
 		bill.setUpdateDateIncludingText(item["updateDateIncludingText"])
 
-	#setCommitteeReports(committeeReportList)
-	#setCBOCostEstimates(cboCostEstimateList)
-	#setLaws(lawType, lawNumber)
-	#setNotes(notesList)
-	#setPolicyArea(name)
+	if "laws" in item:
+		bill.setLaws(item["laws"]["type"], item["laws"]["number"])
+		
+	if "policyArea" in item:
+		bill.setPolicyArea(item["policyArea"]["name"])
+
+	# TODO: Deal With Custom Objects
+	# TODO: Determine If committeeReports children are arrays or objects
+	if "committeeReports" in item:
+		committeeReports: list = []
+		for committeeReportData in item["committeeReports"]:
+			committeeReport = CommitteeReportStub(committeeReportData["citation"], committeeReportData["url"])
+			
+			committeeReports.append(committeeReport)
+			
+		bill.setCommitteeReports(committeeReports)
+	
+	if "cboCostEstimates" in item:
+		cboCostEstimates: list = []
+		for cboCostEstimateData in item["cboCostEstimates"]:
+			cboCostEstimate = CBOCostEstimate(cboCostEstimateData["pubDate"], cboCostEstimateData["title"], cboCostEstimateData["url"])
+			
+			cboCostEstimates.append(cboCostEstimate)
+			
+		bill.setCBOCostEstimates(cboCostEstimates)
+	
+	if "notes" in item:
+		notes: list = []
+		for noteData in item["notes"]:
+			note = Note(noteData["text"])
+			
+			notes.append(note)
+			
+		bill.setNotes(notes)
+	
+	# TODO: End Deal With Custom Objects
 
 	# TODO: Deal With URL Stubs
 	if "actions" in item:
@@ -221,14 +279,24 @@ def createBill(data: dict):
 			
 		bill.setSponsors(sponsors)
 	
-	#setRelatedBills(count, url)
-	#setCosponsors(countIncludingWithdrawn, count, url)
-	#setSubjects(count, url)
-	#setSummaries(count, url)
-	#setAmendments(count, url)
-	#setTextVersions(count, url)
+	if "relatedBills" in item:
+		bill.setRelatedBills(item["relatedBills"]["count"], item["relatedBills"]["url"])
 	
-	# TODO: End Deal With URL Stubs	
+	if "cosponsors" in item:
+		bill.setCosponsors(item["cosponsors"]["countIncludingWithdrawnCosponsors"], item["cosponsors"]["count"], item["cosponsors"]["url"])
+
+	if "subjects" in item:
+		bill.setSubjects(item["subjects"]["count"], item["subjects"]["url"])
+	
+	if "summaries" in item:
+		bill.setSummaries(item["summaries"]["count"], item["summaries"]["url"])
+	
+	if "amendments" in item:
+		bill.setAmendments(item["amendments"]["count"], item["amendments"]["url"])
+	
+	if "textVersions" in item:
+		bill.setTextVersions(item["textVersions"]["count"], item["textVersions"]["url"])
+	# TODO: End Deal With URL Stubs
 	
 	return bill
 	
