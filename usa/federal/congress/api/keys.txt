@@ -1,0 +1,34 @@
+# Possible Key Paths
+# ---
+
+# usa/federal/congress/bills/$congress/$billType/$billNumber/data.json
+# usa/federal/congress/members/$id/data.json
+# usa/federal/congress/amendments/$congress/$amendmentType/$amendmentNumber/data.json
+# usa/federal/congress/committee-reports/$congress/$committeeReportType/$committeeReportNumber/data.json
+
+# ------
+# TODO Key Paths
+# ---
+
+# usa/federal/congress/bills/$congress/$billType/$billNumber/committees.json
+# usa/federal/congress/bills/$congress/$billType/$billNumber/relatedbills/$page.json
+# usa/federal/congress/bills/$congress/$billType/$billNumber/actions/$page.json
+# usa/federal/congress/bills/$congress/$billType/$billNumber/cosponsors/$page.json
+# usa/federal/congress/bills/$congress/$billType/$billNumber/subjects/$page.json
+# usa/federal/congress/bills/$congress/$billType/$billNumber/summaries/$page.json
+# usa/federal/congress/bills/$congress/$billType/$billNumber/titles/$page.json
+# usa/federal/congress/bills/$congress/$billType/$billNumber/text/$page.json
+# usa/federal/congress/bills/$congress/$billType/$billNumber/cbo/$publicationNumber.pdf # This one's special as the metadata has to be tracked and extracted separately
+# Don't Record Notes, They Are Just References To HTML Versions Of Related Bills
+# usa/federal/congress/bills/$congress/data.json
+
+# ------
+# TODO Determine Key Paths
+# ---
+
+# TODO: Determine how to organize Congressional Records
+# TODO: Check If Already Stored and Determine how to organize House Communication
+# TODO: Check If Already Stored and Determine how to organize House Requirement
+# TODO: Check If Already Stored and Determine how to organize Senate Communication
+# TODO: Determine how to organize Nominations
+# TODO: Determine how to organize Treaties
