@@ -51,7 +51,10 @@ def setup_table(connection: mysql.connector.connection_cext.CMySQLConnection):
 	connection.commit()
 	cursor.close()
 
-def add_entry(connection: mysql.connector.connection_cext.CMySQLConnection, path: str):
+def add_entry(cursor: mysql.connector.cursor_cext.CMySQLCursor, path: str):
+	# TODO: Use More Secure Prepared Statement
+	# TODO: Do Research On Python Prepared Statements - https://stackoverflow.com/q/1947750
+	
 	table_name: str = 'tableofcontents'
 	with open(file=path, mode="r") as f:
 		contents: dict = json.load(f)
@@ -67,7 +70,7 @@ def add_entry(connection: mysql.connector.connection_cext.CMySQLConnection, path
 			number: str = contents["bill"]["number"]
 			url: str = "https://s3.us-east-1.wasabisys.com/bills/%s/%s/%s/%s/%s/%s/%s/data.json" % (country, level, branch, "bills", session, entry_type, number)
 			
-			insert_sql: str = 'INSERT INTO %s (country, level, branch, form, session, type, number, url) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);' % (table_name, country, level, branch, form, session, entry_type, number, url)
+			insert_sql: str = 'INSERT INTO %s (country, level, branch, form, session, type, number, url) VALUES ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s");' % (table_name, country, level, branch, form, session, entry_type, number, url)
 		elif "committeeReports" in contents:  # usa/federal/congress/committee-reports/118/hrpt/1
 			form: str = "committee-report"
 			session: int = contents["committeeReports"][0]["congress"]
@@ -76,33 +79,36 @@ def add_entry(connection: mysql.connector.connection_cext.CMySQLConnection, path
 			url: str = "https://s3.us-east-1.wasabisys.com/bills/%s/%s/%s/%s/%s/%s/%s/data.json" % (country, level, branch, "committee-reports", session, entry_type, number)
 			
 			# TODO: Investigate Array
-			insert_sql: str = 'INSERT INTO %s (country, level, branch, form, session, type, number, url) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);' % (table_name, country, level, branch, form, session, entry_type, number, url)
+			insert_sql: str = 'INSERT INTO %s (country, level, branch, form, session, type, number, url) VALUES ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s");' % (table_name, country, level, branch, form, session, entry_type, number, url)
 		elif "amendment" in contents:  # usa/federal/congress/amendments/103/hamdt/1
 			form: str = "amendment"
 			session: int = contents["amendment"]["congress"]
 			entry_type: str = contents["amendment"]["type"].lower()
 			number: str = contents["amendment"]["number"]
-			url: str = "https://s3.us-east-1.wasabisys.com/bills/%s/%s/%s/%s/%s/%s/%s/data.json" % (table_name, country, level, branch, "amendments", session, entry_type, number)
+			url: str = "https://s3.us-east-1.wasabisys.com/bills/%s/%s/%s/%s/%s/%s/%s/data.json" % (country, level, branch, "amendments", session, entry_type, number)
 			
-			insert_sql: str = 'INSERT INTO %s (country, level, branch, form, session, type, number, url) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);' % (table_name, country, level, branch, form, session, entry_type, number, url)
+			insert_sql: str = 'INSERT INTO %s (country, level, branch, form, session, type, number, url) VALUES ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s");' % (table_name, country, level, branch, form, session, entry_type, number, url)
 		elif "member" in contents:  # usa/federal/congress/members/F000209
 			form: str = "member"
 			number: str = contents["member"]["identifiers"]["bioguideId"]
 			url: str = "https://s3.us-east-1.wasabisys.com/bills/%s/%s/%s/%s/%s/data.json" % (country, level, branch, "members", number)
 			
 			# TODO: Add Table For Members
-			insert_sql: str = 'INSERT INTO %s (country, level, branch, form, number, url) VALUES (%s, %s, %s, %s, %s, %s);' % (table_name, country, level, branch, form, number, url)
+			insert_sql: str = 'INSERT INTO %s (country, level, branch, form, number, url) VALUES ("%s", "%s", "%s", "%s", "%s", "%s");' % (table_name, country, level, branch, form, number, url)
 			
 		print("Inserting Entry For: %s" % url)
 		cursor.execute(insert_sql)  # TODO: Determine if should check if successful
 
 def add_entries(connection: mysql.connector.connection_cext.CMySQLConnection):
 	path: str = 'local'
+	
+	cursor = connection.cursor()
+	
 	for (dirpath, dirnames, filenames) in os.walk(path):
 		for filename in filenames:
 			if filename.endswith('.json'):
 				file_path: str = os.sep.join([dirpath, filename])
-				add_entry(connection=connection, path=file_path)
+				add_entry(cursor=cursor, path=file_path)
 
 		connection.commit()
 
@@ -112,3 +118,4 @@ if __name__ == "__main__":
 	db = get_config()
 	setup_table(connection=db)
 	add_entries(connection=db)
+	db.close()
