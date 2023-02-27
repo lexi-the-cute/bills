@@ -65,7 +65,7 @@ def add_entry(connection: mysql.connector.connection_cext.CMySQLConnection, path
 			session: int = contents["bill"]["congress"]
 			entry_type: str = contents["bill"]["type"].lower()
 			number: str = contents["bill"]["number"]
-			url: str = "https://s3.us-east-1.wasabisys.com/bills/%s/%s/%s/%s/%s/%s/%s/%s/data.json" % (country, level, branch, "bills", session, entry_type, number)
+			url: str = "https://s3.us-east-1.wasabisys.com/bills/%s/%s/%s/%s/%s/%s/%s/data.json" % (country, level, branch, "bills", session, entry_type, number)
 			
 			insert_sql: str = 'INSERT INTO %s (country, level, branch, form, session, type, number, url) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);' % (country, level, branch, form, session, entry_type, number, url)
 		elif "committeeReports" in contents:  # usa/federal/congress/committee-reports/118/hrpt/1
@@ -73,7 +73,7 @@ def add_entry(connection: mysql.connector.connection_cext.CMySQLConnection, path
 			session: int = contents["committeeReports"][0]["congress"]
 			entry_type: str = contents["committeeReports"][0]["type"].lower()
 			number: int = contents["committeeReports"][0]["number"]
-			url: str = "https://s3.us-east-1.wasabisys.com/bills/%s/%s/%s/%s/%s/%s/%s/%s/data.json" % (country, level, branch, "committee-reports", session, entry_type, number)
+			url: str = "https://s3.us-east-1.wasabisys.com/bills/%s/%s/%s/%s/%s/%s/%s/data.json" % (country, level, branch, "committee-reports", session, entry_type, number)
 			
 			# TODO: Investigate Array
 			insert_sql: str = 'INSERT INTO %s (country, level, branch, form, session, type, number, url) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);' % (country, level, branch, form, session, entry_type, number, url)
@@ -82,7 +82,7 @@ def add_entry(connection: mysql.connector.connection_cext.CMySQLConnection, path
 			session: int = contents["amendment"]["congress"]
 			entry_type: str = contents["amendment"]["type"].lower()
 			number: str = contents["amendment"]["number"]
-			url: str = "https://s3.us-east-1.wasabisys.com/bills/%s/%s/%s/%s/%s/%s/%s/%s/data.json" % (country, level, branch, "amendments", session, entry_type, number)
+			url: str = "https://s3.us-east-1.wasabisys.com/bills/%s/%s/%s/%s/%s/%s/%s/data.json" % (country, level, branch, "amendments", session, entry_type, number)
 			
 			insert_sql: str = 'INSERT INTO %s (country, level, branch, form, session, type, number, url) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);' % (country, level, branch, form, session, entry_type, number, url)
 		elif "member" in contents:  # usa/federal/congress/members/F000209
