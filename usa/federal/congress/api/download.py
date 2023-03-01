@@ -125,8 +125,8 @@ def download_file(url: str):
 	
 	key: str = get_key(url=url)
 	
-	#if exists(key="local/%s" % key):
-		#return
+	if exists(key="local/%s" % key):
+		return
 	
 	results = get_json(api_key=next(api_key), url=url)
 	text = json.dumps(results)
