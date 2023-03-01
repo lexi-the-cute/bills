@@ -5,6 +5,8 @@ charset-normalizer==3.0.1
 humanize==4.6.0
 idna==3.4
 jmespath==1.0.1
+mysql-connector-python==8.0.32
+protobuf==3.20.3
 python-dateutil==2.8.2
 PyYAML==6.0
 requests==2.28.2
