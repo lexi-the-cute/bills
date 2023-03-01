@@ -73,7 +73,22 @@ def get_api_key(config):
 def get_key(url: str):
 	path: str = urlparse(url).path
 	
-	return path.split("/")[2:]
+	split = path.split("/")[2:]
+	
+	# TODO: Consider Moving Paths Back To Original Names
+	if split[0] == "amendment":
+		split[0] = "amendments"
+	elif split[0] == "bill":
+		split[0] = "bills"
+	elif split[0] == "member":
+		split[0] = "members"
+	elif split[0] == "committee-report":
+		split[0] = "committee-reports"
+	
+	partial = "/".join(split)
+	key = "usa/federal/congress/%s/data.json" % partial
+	
+	return key
 
 def exists(key: str):
 	return os.path.exists("local/%s/data.json" % key)
