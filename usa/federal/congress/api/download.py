@@ -113,7 +113,9 @@ def get_json(api_key: str, url: str):
 		
 		response = requests.get(url=url)
 		return response.json()
-		
+	
+	return results
+
 def download_file(url: str):
 	global api_key
 	global config
@@ -123,14 +125,14 @@ def download_file(url: str):
 	
 	key: str = get_key(url=url)
 	
-	if exists(key=key):
-		return
+	#if exists(key="local/%s" % key):
+		#return
 	
 	results = get_json(api_key=next(api_key), url=url)
-	
 	text = json.dumps(results)
 	
 	print("Uploading File %s" % key)
+	#print(results)
 	save_local(key="local/%s" % key, body=text)
 	upload_file(config=config['s3'], key=key, body=text)
 
