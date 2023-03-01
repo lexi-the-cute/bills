@@ -118,6 +118,9 @@ def download_file(url: str):
 	global api_key
 	global config
 	
+	if url is None:
+		return
+	
 	key: str = get_key(url=url)
 	
 	if exists(key=key):
@@ -135,6 +138,7 @@ def download_data(path: str):
 	with open(file=path, mode="r") as f:
 		contents: dict = json.load(f)
 		
+		#print("Path: %s" % path)
 		if "bill" in contents:
 			bill: dict = contents["bill"]
 			actions: str = bill["actions"]["url"] if "actions" in bill else None
