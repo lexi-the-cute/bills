@@ -6,8 +6,11 @@ import boto3
 import dpath
 import random
 import requests
+import humanize
 
 from urllib.parse import urlparse
+
+total: int = 2478283
 
 def load_config():
 	with open('config.yml', 'r') as fi:
@@ -133,9 +136,12 @@ def get_json(api_key: str, url: str):
 	
 	return results
 
+download_count: int = 0
 def download_file(url: str):
 	global api_key
 	global config
+	global download_count
+	global total
 	
 	if url is None:
 		return
@@ -145,6 +151,9 @@ def download_file(url: str):
 	if exists(key=key):
 		return
 	
+	download_count += 1
+	#return
+	
 	results = get_json(api_key=next(api_key), url=url)
 	
 	# For When Failing To Retrieve JSON At All
@@ -153,7 +162,7 @@ def download_file(url: str):
 	
 	text = json.dumps(results)
 	
-	print("Uploading File %s" % key)
+	print("Uploading File (%s/%s) - %s" % (humanize.intcomma(download_count), humanize.intcomma(total), key))
 	#print(results)
 	save_local(key=key, body=text)
 	upload_file(config=config['s3'], key=key, body=text)
@@ -315,3 +324,4 @@ def read_bills():
 if __name__ == "__main__":
 	config, s3, api_key = get_config()
 	read_bills()
+	#print("Total Bill Count: %s" % download_count)
