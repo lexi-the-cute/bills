@@ -162,7 +162,7 @@ def download_file(url: str):
 	
 	text = json.dumps(results)
 	
-	print("Uploading File (%s/%s) - %s" % (humanize.intcomma(download_count), humanize.intcomma(total), key))
+	print("Uploading File (%s/%s) -  - %s" % (humanize.intcomma(download_count), humanize.intcomma(total), humanize.intcomma(total-download_count), key))
 	#print(results)
 	save_local(key=key, body=text)
 	upload_file(config=config['s3'], key=key, body=text)
