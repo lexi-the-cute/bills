@@ -107,14 +107,22 @@ def get_json(api_key: str, url: str):
 	
 	rate_limit, rate_limit_remaining = get_rate_limit(response)
 	if response.status_code != 200:
-		#print(results["error"]["message"])
-		print("Response: %s" % response.text)
-		print("Paused at %s://%s%s" % (scheme, netloc, path))
-		print("Waiting 60 Minutes To Try Again...")
-		time.sleep(60*60)
+		error = results["error"]
 		
-		response = requests.get(url=url)
-		return response.json()
+		if "message" in error:
+			print(error["message"])
+			print("Paused at %s://%s%s" % (scheme, netloc, path))
+			print("Waiting 60 Minutes To Try Again...")
+			time.sleep(60*60)
+		
+			response = requests.get(url=url)
+			return response.json()
+		elif error.contains("matches the given query"):
+			print("Error: %s" % response.text)
+			with open('error.log', 'a') as fi:
+				fi.write("%s,%s://%s%s\n" % (response.text,scheme, netloc, path))
+		else:
+			print("Response: %s" % response.text)
 	
 	return results
 
