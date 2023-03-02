@@ -103,7 +103,14 @@ def get_json(api_key: str, url: str):
 	url: str = "%s://%s%s?api_key=%s&format=json" % (scheme, netloc, path, api_key)
 	
 	response = requests.get(url=url)
-	results = response.json()
+	try:
+		results = response.json()
+	except:
+		print("Read JSON Error: %s" % response.text)
+		with open('json-error.log', 'a') as fi:
+			fi.write("%s,%s://%s%s\n" % (response.text, scheme, netloc, path))
+		return None
+		
 	
 	rate_limit, rate_limit_remaining = get_rate_limit(response)
 	if response.status_code != 200:
@@ -139,6 +146,11 @@ def download_file(url: str):
 		return
 	
 	results = get_json(api_key=next(api_key), url=url)
+	
+	# For When Failing To Retrieve JSON At All
+	if results is None:
+		return
+	
 	text = json.dumps(results)
 	
 	print("Uploading File %s" % key)
