@@ -117,10 +117,10 @@ def get_json(api_key: str, url: str):
 		
 			response = requests.get(url=url)
 			return response.json()
-		elif error.contains("matches the given query"):
-			print("Error: %s" % response.text)
+		elif "matches the given query" in error:
+			print("Error: %s" % error)
 			with open('error.log', 'a') as fi:
-				fi.write("%s,%s://%s%s\n" % (response.text,scheme, netloc, path))
+				fi.write("%s,%s://%s%s\n" % (error, scheme, netloc, path))
 		else:
 			print("Response: %s" % response.text)
 	
