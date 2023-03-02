@@ -39,6 +39,7 @@ def upload_file(config: dict, key: str, body: str):
 	)
 
 def save_local(key: str, body: str):
+	key: str = "local/%s" % key
 	path: str = os.path.dirname(key)
 	if not os.path.exists(path):
 		os.makedirs(path)
@@ -91,7 +92,7 @@ def get_key(url: str):
 	return key
 
 def exists(key: str):
-	return os.path.exists("local/%s/data.json" % key)
+	return os.path.exists("local/%s" % key)
 
 def get_json(api_key: str, url: str):
 	# https://api.congress.gov/v3/member/A000217?format=json
@@ -134,7 +135,7 @@ def download_file(url: str):
 	
 	print("Uploading File %s" % key)
 	#print(results)
-	save_local(key="local/%s" % key, body=text)
+	save_local(key=key, body=text)
 	upload_file(config=config['s3'], key=key, body=text)
 
 def download_data(path: str):
