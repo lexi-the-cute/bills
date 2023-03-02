@@ -106,7 +106,8 @@ def get_json(api_key: str, url: str):
 	
 	rate_limit, rate_limit_remaining = get_rate_limit(response)
 	if response.status_code != 200:
-		print(results["error"]["message"])
+		#print(results["error"]["message"])
+		print("Response: %s" % response.text)
 		print("Paused at %s://%s%s" % (scheme, netloc, path))
 		print("Waiting 60 Minutes To Try Again...")
 		time.sleep(60*60)
@@ -125,7 +126,7 @@ def download_file(url: str):
 	
 	key: str = get_key(url=url)
 	
-	if exists(key="local/%s" % key):
+	if exists(key=key):
 		return
 	
 	results = get_json(api_key=next(api_key), url=url)
