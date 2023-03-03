@@ -10,7 +10,7 @@ import humanize
 
 from urllib.parse import urlparse
 
-total: int = 2478283
+total: int = 2371122
 
 def load_config():
 	with open('config.yml', 'r') as fi:
