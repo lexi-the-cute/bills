@@ -72,8 +72,14 @@ def get_config():
 
 @app.route("/actor")
 def path_actor():
-	resp = flask.Response(json.dumps(actor))
-	resp.headers['Content-Type'] = 'application/activity+json; charset=utf-8'
+	accepted: str = flask.request.headers.get('Accept')
+	
+	if "application/activity+json" in accepted:
+		resp = flask.Response(json.dumps(actor))
+		resp.headers['Content-Type'] = 'application/activity+json; charset=utf-8'
+	else:
+		resp = flask.Response("", 302)
+		resp.headers['Location'] = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
 	
 	return resp
 
