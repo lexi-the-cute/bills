@@ -12,3 +12,18 @@ congress:
         - "YOUR_FIRST_API_KEY"
         - "YOUR_SECOND_API_KEY"
         - "YOUR_THIRD_API_KEY"
+mysql:
+    hostname: "localhost"
+    username: "root"
+    password: ""
+    database: "congress"
+activitypub:
+    hostname: "localhost"
+    server_port: 8080
+    account_name: "demo"
+    web_hostname: "localhost"
+    web_domain: "http://localhost"
+    certificate_path: "/etc/letsencrypt/live/.../fullchain.pem"
+    private_key_path: "/etc/letsencrypt/live/.../privkey.pem"
+    activitypub_public_key: "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
+    activitypub_private_key: "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
