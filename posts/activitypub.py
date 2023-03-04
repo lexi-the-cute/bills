@@ -95,4 +95,5 @@ if __name__ == "__main__":
 	
 	actor["publicKey"]["publicKeyPem"] = ap["activitypub_public_key"]
 	
-	app.run(debug=False, ssl_context=(ap["certificate_path"], ap["private_key_path"]), host=hostName, port=serverPort)
+	#app.run(debug=False, ssl_context=(ap["certificate_path"], ap["private_key_path"]), host=hostName, port=serverPort)
+	app.run(debug=False, host=hostName, port=serverPort)
