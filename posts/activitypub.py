@@ -3,6 +3,7 @@ import time
 import json
 import flask
 
+from waitress import serve
 from urllib.parse import urlparse
 
 hostName = "localhost"
@@ -62,7 +63,7 @@ def path_actor(short_id: str):
 		"id": None,
 		"type": "Service",
 		"preferredUsername": None,
-		"name": None,
+		"url": None,
 		"inbox": None,
 		"outbox": None,
 		"following": None,
@@ -71,13 +72,28 @@ def path_actor(short_id: str):
 			"id": None,
 			"owner": None,
 			"publicKeyPem": "-----BEGIN PUBLIC KEY-----...-----END PUBLIC KEY-----"
+		},
+		
+		"name": None,
+		"summary": None,
+		"icon": {
+			"type": "Image",
+			"mediaType": None,
+			"url": None
+		},
+		"image": {
+			"type": "Image",
+			"mediaType": None,
+			"url": None
 		}
+		
 	}
 	
 	actor["id"] = "%s/users/%s" % (ap["web_domain"], short_id)
 	actor["preferredUsername"] = "%s" % short_id
 	actor["inbox"] = "%s/users/%s/inbox" % (ap["web_domain"], short_id)
 	actor["outbox"] = "%s/users/%s/outbox" % (ap["web_domain"], short_id)
+	actor["url"] = "%s/@%s" % (ap["web_domain"], short_id)
 	actor["following"] = "%s/users/%s/following" % (ap["web_domain"], short_id)
 	actor["followers"] = "%s/users/%s/followers" % (ap["web_domain"], short_id)
 	actor["publicKey"]["id"] = "%s/users/%s#main-key" % (ap["web_domain"], short_id)
@@ -85,6 +101,12 @@ def path_actor(short_id: str):
 	actor["publicKey"]["publicKeyPem"] = ap["activitypub_public_key"]
 	
 	actor["name"] = "%s <bot>" % short_id
+	actor["summary"] = """
+		<p>I'm a bot that's designed to show bill data from different governments. I was developed by <span class="h-card"><a href="https://chat.alexisart.me/@alexis" class="u-url mention">@<span>alexis</span></a></span>.</p>
+		
+		<p>Friendly Disclaimer: This bot can generate any response that are not intentional or monitored and authors don't claim any responsibilities.</p>
+	"""
+	
 	
 	if "application/activity+json" in accepted or disable_redirect:
 		resp = flask.Response(json.dumps(actor))
@@ -191,4 +213,5 @@ if __name__ == "__main__":
 	config, ap = get_config()
 	
 	#app.run(debug=False, ssl_context=(ap["certificate_path"], ap["private_key_path"]), host=hostName, port=serverPort)
-	app.run(debug=True, host=ap["hostname"], port=ap["server_port"])
+	#app.run(debug=False, host=ap["hostname"], port=ap["server_port"])
+	serve(app, host=ap["hostname"], port=ap["server_port"])
