@@ -14,6 +14,16 @@ web_domain = "http://%s" % web_hostname
 
 app = flask.Flask(__name__)
 
+def load_config():
+	with open('config.yml', 'r') as fi:
+		return yaml.safe_load(fi)
+
+def get_config():
+	config = load_config()
+	activitypub = config['activitypub']
+	
+	return config, activitypub
+
 if __name__ == "__main__":
 	config, ap = get_config()
 	hostName = ap["hostname"]
@@ -73,16 +83,6 @@ message: dict = {
 headers: dict = {
 	"Signature": 'keyId="%s/actor#main-key",headers="(request-target) host date",signature="..."' % web_domain
 }
-
-def load_config():
-	with open('config.yml', 'r') as fi:
-		return yaml.safe_load(fi)
-
-def get_config():
-	config = load_config()
-	activitypub = config['activitypub']
-	
-	return config, activitypub
 
 @app.route("/actor")
 def path_actor():
