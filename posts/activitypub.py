@@ -101,7 +101,7 @@ if __name__ == "__main__":
 	actor["publicKey"]["owner"] = "%s/actor" % web_domain
 	actor["publicKey"]["publicKeyPem"] = ap["activitypub_public_key"]
 	webfinger["subject"] = "acct:%s@%s" % (account_name, web_hostname)
-	webfinger["links"]["href"] = "%s/actor" % web_domain
+	webfinger["links"][0]["href"] = "%s/actor" % web_domain
 	
 	#app.run(debug=False, ssl_context=(ap["certificate_path"], ap["private_key_path"]), host=hostName, port=serverPort)
 	app.run(debug=False, host=hostName, port=serverPort)
