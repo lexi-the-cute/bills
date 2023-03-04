@@ -14,6 +14,20 @@ web_domain = "http://%s" % web_hostname
 
 app = flask.Flask(__name__)
 
+if __name__ == "__main__":
+	config, ap = get_config()
+	hostName = ap["hostname"]
+	serverPort = ap["server_port"]
+
+	account_name = ap["account_name"]
+	web_hostname = ap["web_hostname"]
+	web_domain = ap["web_domain"]
+	
+	actor["publicKey"]["publicKeyPem"] = ap["activitypub_public_key"]
+	
+	#app.run(debug=False, ssl_context=(ap["certificate_path"], ap["private_key_path"]), host=hostName, port=serverPort)
+	app.run(debug=False, host=hostName, port=serverPort)
+
 actor: dict = {
 	"@context": [
 		"https://www.w3.org/ns/activitystreams",
@@ -83,17 +97,3 @@ def path_webfinger():
 	resp.headers['Content-Type'] = 'application/jrd+json; charset=utf-8'
 	
 	return resp
-
-if __name__ == "__main__":
-	config, ap = get_config()
-	hostName = ap["hostname"]
-	serverPort = ap["server_port"]
-
-	account_name = ap["account_name"]
-	web_hostname = ap["web_hostname"]
-	web_domain = ap["web_domain"]
-	
-	actor["publicKey"]["publicKeyPem"] = ap["activitypub_public_key"]
-	
-	#app.run(debug=False, ssl_context=(ap["certificate_path"], ap["private_key_path"]), host=hostName, port=serverPort)
-	app.run(debug=False, host=hostName, port=serverPort)
