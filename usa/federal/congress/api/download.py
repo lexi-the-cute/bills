@@ -10,7 +10,7 @@ import humanize
 
 from urllib.parse import urlparse
 
-total: int = 2166447
+total: int = 2166447-9848
 
 def load_config():
 	with open('config.yml', 'r') as fi:
@@ -97,7 +97,10 @@ def get_key(url: str):
 def exists(key: str):
 	return os.path.exists("local/%s" % key)
 
+session = requests.Session()
 def get_json(api_key: str, url: str):
+	global session
+	
 	# https://api.congress.gov/v3/member/A000217?format=json
 	parsed: str = urlparse(url)
 	scheme: str = parsed.scheme
@@ -105,7 +108,7 @@ def get_json(api_key: str, url: str):
 	path: str = parsed.path
 	url: str = "%s://%s%s?api_key=%s&format=json" % (scheme, netloc, path, api_key)
 	
-	response = requests.get(url=url)
+	response = session.get(url=url)
 	try:
 		results = response.json()
 	except:
@@ -125,7 +128,7 @@ def get_json(api_key: str, url: str):
 			print("Waiting 60 Minutes To Try Again...")
 			time.sleep(60*60)
 		
-			response = requests.get(url=url)
+			response = session.get(url=url)
 			return response.json()
 		elif "matches the given query" in error:
 			print("Error: %s" % error)

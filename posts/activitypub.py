@@ -104,8 +104,12 @@ def path_actor(short_id: str):
 	actor["summary"] = """
 		<p>I'm a bot that's designed to show bill data from different governments. I was developed by <span class="h-card"><a href="https://chat.alexisart.me/@alexis" class="u-url mention">@<span>alexis</span></a></span>.</p>
 		
-		<p>Friendly Disclaimer: This bot can generate any response that are not intentional or monitored and authors don't claim any responsibilities.</p>
+		<p>Friendly Disclaimer: This bot can generate any response that is not intentional or monitored. The author's are not responsible.</p>
 	"""
+	actor["icon"]["mediaType"] = "image/png"
+	actor["icon"]["url"] = "/images/logo"
+	actor["image"]["mediaType"] = "image/png"
+	actor["image"]["url"] = "/images/header"
 	
 	
 	if "application/activity+json" in accepted or disable_redirect:
@@ -208,6 +212,18 @@ def path_actor_html(short_id: str):
 	resp.headers['Content-Type'] = 'text/html; charset=utf-8'
 	
 	return resp
+
+@app.route("/images/logo")
+def path_logo():
+	global ap
+	
+	return flask.send_file(ap["logo"])
+
+@app.route("/images/header")
+def path_header():
+	global ap
+	
+	return flask.send_file(ap["header"])
 
 if __name__ == "__main__":
 	config, ap = get_config()

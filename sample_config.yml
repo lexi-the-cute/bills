@@ -27,3 +27,5 @@ activitypub:
     private_key_path: "/etc/letsencrypt/live/.../privkey.pem"
     activitypub_public_key: "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
     activitypub_private_key: "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
+    logo: "../images/logo.png"
+    header: "../images/header.png"
