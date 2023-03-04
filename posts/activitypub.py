@@ -39,6 +39,7 @@ webfinger: dict = {
 	}]
 }
 
+# TODO: Figure out how to host "existing" posts
 message: dict = {
 	"@context": "https://www.w3.org/ns/activitystreams",
 	"id": "%s/create-hello-world" % web_domain,
