@@ -15,23 +15,6 @@ web_domain = "http://%s" % web_hostname
 
 app = flask.Flask(__name__)
 
-# TODO: Figure out how to host "existing" posts
-message: dict = {
-	"@context": "https://www.w3.org/ns/activitystreams",
-	"id": "%s/create-hello-world" % web_domain,
-	"type": "Create",
-	"actor": "%s/actor" % web_domain,
-	"object": {
-		"id": "%s/hello-world" % web_domain,
-		"type": "Note",
-		"published": "2018-06-23T17:17:11Z",
-		"attributedTo": "%s/actor" % web_domain,
-		"inReplyTo": "https://mastodon.social/@Gargron/100254678717223630",
-		"content": "<p>Hello world</p>",
-		"to": "https://www.w3.org/ns/activitystreams#Public"
-	}
-}
-
 headers: dict = {
 	"Signature": 'keyId="%s/actor#main-key",headers="(request-target) host date",signature="..."' % web_domain
 }
@@ -68,6 +51,7 @@ def path_actor(short_id: str):
 		"outbox": "%s/users/%s/outbox" % (ap["web_domain"], short_id),
 		"following": "%s/users/%s/following" % (ap["web_domain"], short_id),
 		"followers": "%s/users/%s/followers" % (ap["web_domain"], short_id),
+		"liked": "%s/users/%s/liked" % (ap["web_domain"], short_id),
 		"publicKey": {
 			"id": "%s/users/%s#main-key" % (ap["web_domain"], short_id),
 			"owner": "%s/users/%s" % (ap["web_domain"], short_id),
@@ -169,22 +153,207 @@ def path_webfinger():
 	
 	return resp
 
+@app.route("/inbox")
+def path_globa_inbox(short_id: str):
+	global ap
+	
+	resp = flask.Response(json.dumps({}))
+	resp.headers['Content-Type'] = 'application/activity+json; charset=utf-8'
+	
+	return resp
+
 @app.route("/users/<short_id>/inbox")
 def path_inbox(short_id: str):
+	global ap
+	
 	resp = flask.Response(json.dumps({}))
+	resp.headers['Content-Type'] = 'application/activity+json; charset=utf-8'
+	
+	return resp
+
+@app.route("/users/<short_id>/posts/<post_id>")
+def path_post(short_id: str, post_id: str):
+	global ap
+	
+	message: dict = {
+		"@context": [
+			"https://www.w3.org/ns/activitystreams",
+			{
+				"ostatus": "http://ostatus.org#",
+				"atomUri": "ostatus:atomUri",
+				"inReplyToAtomUri": "ostatus:inReplyToAtomUri",
+				"conversation": "ostatus:conversation",
+				"sensitive": "as:sensitive",
+				"toot": "http://joinmastodon.org/ns#",
+				"Emoji": "toot:emoji"
+			}
+		],
+		"id": "%s/users/%s/posts/%s" % (ap["web_domain"], short_id, post_id),
+		"type": "Note",
+		"summary": None,
+		"inReplyTo": None,
+		"published": "2023-03-06T00:00:00Z",
+		"url": "%s/@%s/%s" % (ap["web_domain"], short_id, post_id),
+		"attributedTo": "%s/users/%s" % (ap["web_domain"], short_id),
+		"to": [
+			"https://www.w3.org/ns/activitystreams#Public"
+		],
+		"cc": [
+			"%s/users/%s/followers" % (ap["web_domain"], short_id),
+		],
+		"sensitive": False,
+		"content": "<p>:bill: This is a test post :bill:</p>",
+		"tag": [
+			{
+				"id": "%s/emojis/bill" % ap["web_domain"],
+				"type": "Emoji",
+				"name": ":bill:",
+				"updated": "2023-02-25T19:36:09Z",
+				"icon": {
+					"type": "Image",
+					"mediaType": "image/png",
+					"url": "%s/images/emojis/bill" % ap["web_domain"]
+				}
+			}
+		]
+	}
+	
+	resp = flask.Response(json.dumps(message))
+	resp.headers['Content-Type'] = 'application/activity+json; charset=utf-8'
+	
+	return resp
+
+@app.route("/users/<short_id>/posts/<post_id>/activity")
+def path_post_activity(short_id: str, post_id: str):
+	global ap
+	
+	message: dict = {
+		"@context": [
+			"https://www.w3.org/ns/activitystreams",
+			{
+				"ostatus": "http://ostatus.org#",
+				"atomUri": "ostatus:atomUri",
+				"inReplyToAtomUri": "ostatus:inReplyToAtomUri",
+				"conversation": "ostatus:conversation",
+				"sensitive": "as:sensitive",
+				"toot": "http://joinmastodon.org/ns#",
+				"Emoji": "toot:emoji"
+			}
+		],
+		"id": "%s/users/%s/posts/%s/activity" % (ap["web_domain"], short_id, post_id),
+		"type": "Create",
+		"actor": "%s/users/%s" % (ap["web_domain"], short_id),
+		"published": "2023-03-05T00:00:00Z",
+		"to": [
+			"https://www.w3.org/ns/activitystreams#Public"
+		],
+		"cc": [
+			"%s/users/%s/followers" % (ap["web_domain"], short_id),
+		],
+		"object": {
+			"id": "%s/users/%s/posts/%s" % (ap["web_domain"], short_id, post_id),
+			"type": "Note",
+			"summary": None,
+			"inReplyTo": None,
+			"published": "2023-03-06T00:00:00Z",
+			"url": "%s/@%s/%s" % (ap["web_domain"], short_id, post_id),
+			"attributedTo": "%s/users/%s" % (ap["web_domain"], short_id),
+			"to": [
+				"https://www.w3.org/ns/activitystreams#Public"
+			],
+			"cc": [
+				"%s/users/%s/followers" % (ap["web_domain"], short_id),
+			],
+			"sensitive": False,
+			"content": "<p>:bill: This is a test post :bill:</p>",
+			"tag": [
+			{
+				"id": "%s/emojis/bill" % ap["web_domain"],
+				"type": "Emoji",
+				"name": ":bill:",
+				"updated": "2023-02-25T19:36:09Z",
+				"icon": {
+					"type": "Image",
+					"mediaType": "image/png",
+					"url": "%s/images/emojis/bill" % ap["web_domain"]
+				}
+			}
+		]
+		}
+	}
+	
+	resp = flask.Response(json.dumps(message))
 	resp.headers['Content-Type'] = 'application/activity+json; charset=utf-8'
 	
 	return resp
 	
 @app.route("/users/<short_id>/outbox")
 def path_outbox(short_id: str):
-	resp = flask.Response(json.dumps({}))
+	global ap
+	
+	message: dict = {
+		"id": "%s/users/%s/posts/%s/activity" % (ap["web_domain"], short_id, "6d0c2104-4a64-41d3-b337-9718aa6c22e6"),
+		"type": "Create",
+		"actor": "%s/users/%s" % (ap["web_domain"], short_id),
+		"published": "2023-03-05T00:00:00Z",
+		"to": [
+			"https://www.w3.org/ns/activitystreams#Public"
+		],
+		"cc": [
+			"%s/users/%s/followers" % (ap["web_domain"], short_id),
+		],
+		"object": {
+			"id": "%s/users/%s/posts/%s" % (ap["web_domain"], short_id, "6d0c2104-4a64-41d3-b337-9718aa6c22e6"),
+			"type": "Note",
+			"summary": None,
+			"inReplyTo": None,
+			"published": "2023-03-06T00:00:00Z",
+			"url": "%s/@%s/%s" % (ap["web_domain"], short_id, "6d0c2104-4a64-41d3-b337-9718aa6c22e6"),
+			"attributedTo": "%s/users/%s" % (ap["web_domain"], short_id),
+			"to": [
+				"https://www.w3.org/ns/activitystreams#Public"
+			],
+			"cc": [
+				"%s/users/%s/followers" % (ap["web_domain"], short_id),
+			],
+			"sensitive": False,
+			"content": "<p>:bill: This is a test post :bill:</p>"
+		}
+	}
+	
+	outbox: dict = {
+		"@context": [
+			"https://www.w3.org/ns/activitystreams",
+			{
+				"ostatus": "http://ostatus.org#",
+				"atomUri": "ostatus:atomUri",
+				"inReplyToAtomUri": "ostatus:inReplyToAtomUri",
+				"conversation": "ostatus:conversation",
+				"sensitive": "as:sensitive",
+				"toot": "http://joinmastodon.org/ns#",
+				"Emoji": "toot:emoji"
+			}
+		],
+		"id": "%s/users/%s/outbox" % (ap["web_domain"], short_id),
+		"type": "OrderedCollectionPage",
+		"totalItems": 1,
+		#"next": "%s/users/%s/outbox?max_id=%s" % (ap["web_domain"], short_id, 2),
+		#"prev": "%s/users/%s/outbox?min_id=%s" % (ap["web_domain"], short_id, 0),
+		#"partOf": "%s/users/%s/outbox" % (ap["web_domain"], short_id),
+		"orderedItems": [
+			message
+		]
+	}
+	
+	resp = flask.Response(json.dumps(outbox))
 	resp.headers['Content-Type'] = 'application/activity+json; charset=utf-8'
 	
 	return resp
 
 @app.route("/users/<short_id>/following")
 def path_following(short_id: str):
+	global ap
+	
 	resp = flask.Response(json.dumps({}))
 	resp.headers['Content-Type'] = 'application/activity+json; charset=utf-8'
 	
@@ -192,6 +361,17 @@ def path_following(short_id: str):
 
 @app.route("/users/<short_id>/followers")
 def path_followers(short_id: str):
+	global ap
+	
+	resp = flask.Response(json.dumps({}))
+	resp.headers['Content-Type'] = 'application/activity+json; charset=utf-8'
+	
+	return resp
+
+@app.route("/users/<short_id>/liked")
+def path_liked(short_id: str):
+	global ap
+	
 	resp = flask.Response(json.dumps({}))
 	resp.headers['Content-Type'] = 'application/activity+json; charset=utf-8'
 	
@@ -212,6 +392,28 @@ def path_actor_html(short_id: str):
 		</body>
 		</html>
 	""" % (short_id, short_id)
+	
+	resp = flask.Response(html)
+	resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+	
+	return resp
+
+@app.route("/@<short_id>/<post_id>")
+def path_post_html(short_id: str, post_id: str):
+	html: str = """
+		<!DOCTYPE html>
+		<html>
+		<head>
+			<meta charset="UTF-8"> 
+			<title>Post: %s</title>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		</head>
+		<body>
+			<h1>User: %s</h1>
+			<h1>Post: %s</h1>
+		</body>
+		</html>
+	""" % (post_id, short_id, post_id)
 	
 	resp = flask.Response(html)
 	resp.headers['Content-Type'] = 'text/html; charset=utf-8'
@@ -240,5 +442,5 @@ if __name__ == "__main__":
 	config, ap = get_config()
 	
 	#app.run(debug=False, ssl_context=(ap["certificate_path"], ap["private_key_path"]), host=hostName, port=serverPort)
-	#app.run(debug=False, host=ap["hostname"], port=ap["server_port"])
+	#app.run(debug=True, host=ap["hostname"], port=ap["server_port"])
 	serve(app, host=ap["hostname"], port=ap["server_port"])
