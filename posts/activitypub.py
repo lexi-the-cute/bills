@@ -73,6 +73,9 @@ def path_actor(short_id: str):
 			"owner": None,
 			"publicKeyPem": "-----BEGIN PUBLIC KEY-----...-----END PUBLIC KEY-----"
 		},
+		"endpoints": {
+			"sharedInbox": None
+		},
 		
 		"name": None,
 		"summary": None,
@@ -93,6 +96,7 @@ def path_actor(short_id: str):
 	actor["preferredUsername"] = "%s" % short_id
 	actor["inbox"] = "%s/users/%s/inbox" % (ap["web_domain"], short_id)
 	actor["outbox"] = "%s/users/%s/outbox" % (ap["web_domain"], short_id)
+	actor["endpoints"]["sharedInbox"] = "%s/inbox" % ap["web_domain"]
 	actor["url"] = "%s/@%s" % (ap["web_domain"], short_id)
 	actor["following"] = "%s/users/%s/following" % (ap["web_domain"], short_id)
 	actor["followers"] = "%s/users/%s/followers" % (ap["web_domain"], short_id)
@@ -100,16 +104,16 @@ def path_actor(short_id: str):
 	actor["publicKey"]["owner"] = "%s/users/%s" % (ap["web_domain"], short_id)
 	actor["publicKey"]["publicKeyPem"] = ap["activitypub_public_key"]
 	
-	actor["name"] = "%s <bot>" % short_id
+	actor["name"] = "%s 🤖" % short_id
 	actor["summary"] = """
 		<p>I'm a bot that's designed to show bill data from different governments. I was developed by <span class="h-card"><a href="https://chat.alexisart.me/@alexis" class="u-url mention">@<span>alexis</span></a></span>.</p>
 		
-		<p>Friendly Disclaimer: This bot can generate any response that is not intentional or monitored. The author's are not responsible.</p>
+		<p>Friendly Disclaimer: This bot can generate any response that is not intentional or monitored. The author is not responsible.</p>
 	"""
 	actor["icon"]["mediaType"] = "image/png"
-	actor["icon"]["url"] = "/images/logo"
+	actor["icon"]["url"] = "%s/images/logo" % ap["web_domain"]
 	actor["image"]["mediaType"] = "image/png"
-	actor["image"]["url"] = "/images/header"
+	actor["image"]["url"] = "%s/images/header" % ap["web_domain"]
 	
 	
 	if "application/activity+json" in accepted or disable_redirect:
