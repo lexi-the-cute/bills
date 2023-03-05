@@ -60,61 +60,62 @@ def path_actor(short_id: str):
 			"https://www.w3.org/ns/activitystreams",
 			"https://w3id.org/security/v1"
 		],
-		"id": None,
+		"id": "%s/users/%s" % (ap["web_domain"], short_id),
 		"type": "Service",
-		"preferredUsername": None,
-		"url": None,
-		"inbox": None,
-		"outbox": None,
-		"following": None,
-		"followers": None,
+		"preferredUsername": "%s" % short_id,
+		"url": "%s/@%s" % (ap["web_domain"], short_id),
+		"inbox": "%s/users/%s/inbox" % (ap["web_domain"], short_id),
+		"outbox": "%s/users/%s/outbox" % (ap["web_domain"], short_id),
+		"following": "%s/users/%s/following" % (ap["web_domain"], short_id),
+		"followers": "%s/users/%s/followers" % (ap["web_domain"], short_id),
 		"publicKey": {
-			"id": None,
-			"owner": None,
-			"publicKeyPem": "-----BEGIN PUBLIC KEY-----...-----END PUBLIC KEY-----"
+			"id": "%s/users/%s#main-key" % (ap["web_domain"], short_id),
+			"owner": "%s/users/%s" % (ap["web_domain"], short_id),
+			"publicKeyPem": ap["activitypub_public_key"]
 		},
 		"endpoints": {
-			"sharedInbox": None
+			"sharedInbox": "%s/inbox" % ap["web_domain"]
 		},
 		
-		"name": None,
-		"summary": None,
+		"name": "%s 🤖" % short_id,
+		"summary": """
+			<p>I'm a bot that's designed to show bill data from different governments. I was developed by <span class="h-card"><a href="https://chat.alexisart.me/@alexis" class="u-url mention">@<span>alexis</span></a></span>.</p>
+			
+			<p>Friendly Disclaimer: This bot can generate any response that is not intentional or monitored. The author is not responsible.</p>
+		""",
 		"icon": {
 			"type": "Image",
-			"mediaType": None,
-			"url": None
+			"mediaType": "image/png",
+			"url": "%s/images/logo" % ap["web_domain"]
 		},
 		"image": {
 			"type": "Image",
-			"mediaType": None,
-			"url": None
-		}
-		
+			"mediaType": "image/png",
+			"url": "%s/images/header" % ap["web_domain"]
+		},
+		"attachment": [
+			{
+				"type": "PropertyValue",
+				"name": "Donate",
+				"value": """
+					<a href="https://ko-fi.com/alexisartdesign" target="_blank" rel="nofollow noopener noreferrer me"><span class="invisible">https://</span><span class="">ko-fi.com/alexisartdesign</span><span class="invisible"></span></a>
+				"""
+			}
+		],
+		"tag": [
+			{
+				"id": "%s/emojis/bill" % ap["web_domain"],
+				"type": "Emoji",
+				"name": ":bill:",
+				"updated": "2023-02-25T19:36:09Z",
+				"icon": {
+					"type": "Image",
+					"mediaType": "image/png",
+					"url": "%s/images/emojis/bill" % ap["web_domain"]
+				}
+			}
+		]
 	}
-	
-	actor["id"] = "%s/users/%s" % (ap["web_domain"], short_id)
-	actor["preferredUsername"] = "%s" % short_id
-	actor["inbox"] = "%s/users/%s/inbox" % (ap["web_domain"], short_id)
-	actor["outbox"] = "%s/users/%s/outbox" % (ap["web_domain"], short_id)
-	actor["endpoints"]["sharedInbox"] = "%s/inbox" % ap["web_domain"]
-	actor["url"] = "%s/@%s" % (ap["web_domain"], short_id)
-	actor["following"] = "%s/users/%s/following" % (ap["web_domain"], short_id)
-	actor["followers"] = "%s/users/%s/followers" % (ap["web_domain"], short_id)
-	actor["publicKey"]["id"] = "%s/users/%s#main-key" % (ap["web_domain"], short_id)
-	actor["publicKey"]["owner"] = "%s/users/%s" % (ap["web_domain"], short_id)
-	actor["publicKey"]["publicKeyPem"] = ap["activitypub_public_key"]
-	
-	actor["name"] = "%s 🤖" % short_id
-	actor["summary"] = """
-		<p>I'm a bot that's designed to show bill data from different governments. I was developed by <span class="h-card"><a href="https://chat.alexisart.me/@alexis" class="u-url mention">@<span>alexis</span></a></span>.</p>
-		
-		<p>Friendly Disclaimer: This bot can generate any response that is not intentional or monitored. The author is not responsible.</p>
-	"""
-	actor["icon"]["mediaType"] = "image/png"
-	actor["icon"]["url"] = "%s/images/logo" % ap["web_domain"]
-	actor["image"]["mediaType"] = "image/png"
-	actor["image"]["url"] = "%s/images/header" % ap["web_domain"]
-	
 	
 	if "application/activity+json" in accepted or disable_redirect:
 		resp = flask.Response(json.dumps(actor))
@@ -152,16 +153,15 @@ def path_webfinger():
 		return resp
 	
 	webfinger: dict = {
-		"subject": None,
-		"links": [{
-			"rel": "self",
-			"type": "application/activity+json",
-			"href": None
-		}]
+		"subject": resource,
+		"links": [
+			{
+				"rel": "self",
+				"type": "application/activity+json",
+				"href": "https://%s/users/%s" % (domain, username)
+			}
+		]
 	}
-	
-	webfinger["subject"] = resource
-	webfinger["links"][0]["href"] = "https://%s/users/%s" % (domain, username)
 	
 	resp = flask.Response(json.dumps(webfinger))
 	resp.headers['Content-Type'] = 'application/jrd+json; charset=utf-8'
@@ -228,6 +228,12 @@ def path_header():
 	global ap
 	
 	return flask.send_file(ap["header"])
+
+@app.route("/images/emojis/bill")
+def path_header():
+	global ap
+	
+	return flask.send_file(ap["emoji"])
 
 if __name__ == "__main__":
 	config, ap = get_config()
