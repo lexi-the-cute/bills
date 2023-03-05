@@ -29,3 +29,4 @@ activitypub:
     activitypub_private_key: "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
     logo: "../images/logo.png"
     header: "../images/header.png"
+    emoji: "../images/bill-emoji.png"

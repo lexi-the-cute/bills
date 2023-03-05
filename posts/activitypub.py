@@ -77,12 +77,13 @@ def path_actor(short_id: str):
 			"sharedInbox": "%s/inbox" % ap["web_domain"]
 		},
 		
-		"name": "%s 🤖" % short_id,
+		"name": "%s :bill:" % short_id,
 		"summary": """
 			<p>I'm a bot that's designed to show bill data from different governments. I was developed by <span class="h-card"><a href="https://chat.alexisart.me/@alexis" class="u-url mention">@<span>alexis</span></a></span>.</p>
 			
 			<p>Friendly Disclaimer: This bot can generate any response that is not intentional or monitored. The author is not responsible.</p>
 		""",
+		"published": "1789-03-04T00:00:00Z",
 		"icon": {
 			"type": "Image",
 			"mediaType": "image/png",
