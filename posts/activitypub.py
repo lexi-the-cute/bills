@@ -230,7 +230,7 @@ def path_header():
 	return flask.send_file(ap["header"])
 
 @app.route("/images/emojis/bill")
-def path_header():
+def path_emoji_bill():
 	global ap
 	
 	return flask.send_file(ap["emoji"])
