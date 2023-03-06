@@ -104,11 +104,19 @@ def get_bills():
 			data = get_json(url=bill["url"], api_key=next(api_key))
 			
 			if "error" in data:
-				print(data["error"]["message"])
-				print("Waiting 60 Minutes To Try Again...")
-				time.sleep(60*60)
-			
-				data = get_json(url=bill["url"], api_key=next(api_key))
+				error = data["error"]
+				if "message" in error:
+					print(error["message"])
+					print("Waiting 60 Minutes To Try Again...")
+					time.sleep(60*60)
+				
+					data = get_json(url=bill["url"], api_key=next(api_key))
+				elif "matches the given query" in error:
+					print("Error: %s" % error)
+					with open('error.log', 'a') as fi:
+						fi.write("%s,%s://%s%s\n" % (error, scheme, netloc, path))
+				else:
+					print("Response: %s" % response.text)
 			
 			yield key, data, count, total
 
@@ -183,11 +191,19 @@ def get_members():
 			data = get_json(url=member["url"], api_key=next(api_key))
 			
 			if "error" in data:
-				print(data["error"]["message"])
-				print("Waiting 60 Minutes To Try Again...")
-				time.sleep(60*60)
-			
-				data = get_json(url=member["url"], api_key=next(api_key))
+				error = data["error"]
+				if "message" in error:
+					print(error["message"])
+					print("Waiting 60 Minutes To Try Again...")
+					time.sleep(60*60)
+				
+					data = get_json(url=bill["url"], api_key=next(api_key))
+				elif "matches the given query" in error:
+					print("Error: %s" % error)
+					with open('error.log', 'a') as fi:
+						fi.write("%s,%s://%s%s\n" % (error, scheme, netloc, path))
+				else:
+					print("Response: %s" % response.text)
 			
 			yield key, data, count, total
 
@@ -234,11 +250,19 @@ def get_amendments():
 			data = get_json(url=amendment["url"], api_key=next(api_key))
 			
 			if "error" in data:
-				print(data["error"]["message"])
-				print("Waiting 60 Minutes To Try Again...")
-				time.sleep(60*60)
-			
-				data = get_json(url=amendment["url"], api_key=next(api_key))
+				error = data["error"]
+				if "message" in error:
+					print(error["message"])
+					print("Waiting 60 Minutes To Try Again...")
+					time.sleep(60*60)
+				
+					data = get_json(url=bill["url"], api_key=next(api_key))
+				elif "matches the given query" in error:
+					print("Error: %s" % error)
+					with open('error.log', 'a') as fi:
+						fi.write("%s,%s://%s%s\n" % (error, scheme, netloc, path))
+				else:
+					print("Response: %s" % response.text)
 			
 			yield key, data, count, total
 
@@ -286,11 +310,19 @@ def get_committee_reports():
 			data = get_json(url=committee_report["url"], api_key=next(api_key))
 			
 			if "error" in data:
-				print(data["error"]["message"])
-				print("Waiting 60 Minutes To Try Again...")
-				time.sleep(60*60)
-			
-				data = get_json(url=committee_report["url"], api_key=next(api_key))
+				error = data["error"]
+				if "message" in error:
+					print(error["message"])
+					print("Waiting 60 Minutes To Try Again...")
+					time.sleep(60*60)
+				
+					data = get_json(url=bill["url"], api_key=next(api_key))
+				elif "matches the given query" in error:
+					print("Error: %s" % error)
+					with open('error.log', 'a') as fi:
+						fi.write("%s,%s://%s%s\n" % (error, scheme, netloc, path))
+				else:
+					print("Response: %s" % response.text)
 			
 			yield key, data, count, total
 
@@ -336,11 +368,19 @@ def get_treaties():
 			data = get_json(url=treaty["url"], api_key=next(api_key))
 			
 			if "error" in data:
-				print(data["error"]["message"])
-				print("Waiting 60 Minutes To Try Again...")
-				time.sleep(60*60)
-			
-				data = get_json(url=treaty["url"], api_key=next(api_key))
+				error = data["error"]
+				if "message" in error:
+					print(error["message"])
+					print("Waiting 60 Minutes To Try Again...")
+					time.sleep(60*60)
+				
+					data = get_json(url=bill["url"], api_key=next(api_key))
+				elif "matches the given query" in error:
+					print("Error: %s" % error)
+					with open('error.log', 'a') as fi:
+						fi.write("%s,%s://%s%s\n" % (error, scheme, netloc, path))
+				else:
+					print("Response: %s" % response.text)
 			
 			yield key, data, count, total
 
