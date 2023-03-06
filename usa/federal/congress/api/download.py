@@ -143,6 +143,8 @@ def get_json(api_key: str, url: str):
 
 download_count: int = 0
 def download_file(url: str):
+	return
+	
 	global api_key
 	global config
 	global download_count
@@ -314,45 +316,36 @@ def download_data(path: str):
 			treaty: dict = contents["treaty"]
 			actions: str = treaty["actions"]["url"] if "actions" in treaty else None
 			
-			#treaty.pop('actions', None)
+			treaty.pop('actions', None)
 			
-			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				#print("Treaty - %s: %s" % (path, value))
-		elif "actions" in contents:
-			pass
-		elif "subjects" in contents:
-			pass
+			for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				print("Treaty - %s: %s" % (path, value))
 		elif "summaries" in contents:
-			pass
-		elif "titles" in contents:
-			pass
+			summaries: dict = contents["summaries"]
+			
+			#summaries.pop('actions', None)
+			
+			for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				print("Summaries - %s: %s" % (path, value))
 		elif "committees" in contents:
+			committees: dict = contents["committees"]
+			
+			#committees.pop('actions', None)
+			
+			for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				print("Committees - %s: %s" % (path, value))
+		elif "nominations" in contents:
 			pass
-		
-		# TODO: Verify Existence Of Below Categories
-		#elif "cosponsors" in contents:
-			#pass
-		#elif "relatedBills" in contents:
-			#pass
-		#elif "text" in contents:
-			#pass
-		#elif "reports" in contents:
-			#pass
-		#elif "nominations" in contents:
-			#pass
-		#elif "house-communication" in contents:
-			#pass
-		#elif "senate-communication" in contents:
-			#pass
-		#elif "sponsored-legislation" in contents:
-			#pass
-		#elif "cosponsored-legislation" in contents:
-			#pass
-		#elif "congressional-record" in contents:
-			#pass
-		#elif "house-requirement" in contents:
-			#pass
+		elif "house-communication" in contents:
+			pass
+		elif "senate-communication" in contents:
+			pass
+		elif "congressional-record" in contents:
+			pass
+		elif "house-requirement" in contents:
+			pass
 		else:
+			# TODO: Find URLs From Other Files and Check If Already Downloaded
 			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
 				#print("Other - %s: %s" % (path, value))
 				#download_file(url=value)
