@@ -62,6 +62,7 @@ def get_api_key(config):
 		else:
 			current += 1
 
+requests_session = requests.Session()
 def get_bills():
 	offset: int = 0
 	limit: int = 250
@@ -70,7 +71,7 @@ def get_bills():
 	global api_key
 	while loop:
 		url = "https://api.congress.gov/v3/bill?api_key=%s&offset=%s&limit=%s&format=json" % (next(api_key), offset, limit)
-		response = requests.get(url=url)
+		response = requests_session.get(url=url)
 		results = response.json()
 		
 		rate_limit, rate_limit_remaining = get_rate_limit(response)
@@ -79,7 +80,7 @@ def get_bills():
 			print("Waiting 60 Minutes To Try Again...")
 			time.sleep(60*60)
 			
-			response = requests.get(url=url)
+			response = requests_session.get(url=url)
 			results = response.json()
 		
 		# We are at the end of the results, stop looping
@@ -116,7 +117,7 @@ def get_bills():
 def get_json(url: str, api_key: str):
 	url = "%s&api_key=%s" % (url, api_key)
 	
-	response = requests.get(url=url)
+	response = requests_session.get(url=url)
 	return response.json()
 
 def get_bill_actions(url: str, api_key: str):
@@ -151,7 +152,7 @@ def get_members():
 	global api_key
 	while loop:
 		url = "https://api.congress.gov/v3/member?api_key=%s&offset=%s&limit=%s&format=json" % (next(api_key), offset, limit)
-		response = requests.get(url=url)
+		response = requests_session.get(url=url)
 		results = response.json()
 		
 		rate_limit, rate_limit_remaining = get_rate_limit(response)
@@ -160,7 +161,7 @@ def get_members():
 			print("Waiting 60 Minutes To Try Again...")
 			time.sleep(60*60)
 			
-			response = requests.get(url=url)
+			response = requests_session.get(url=url)
 			results = response.json()
 		
 		# We are at the end of the results, stop looping
@@ -200,7 +201,7 @@ def get_amendments():
 	global api_key
 	while loop:
 		url = "https://api.congress.gov/v3/amendment?api_key=%s&offset=%s&limit=%s&format=json" % (next(api_key), offset, limit)
-		response = requests.get(url=url)
+		response = requests_session.get(url=url)
 		results = response.json()
 		
 		rate_limit, rate_limit_remaining = get_rate_limit(response)
@@ -209,7 +210,7 @@ def get_amendments():
 			print("Waiting 60 Minutes To Try Again...")
 			time.sleep(60*60)
 			
-			response = requests.get(url=url)
+			response = requests_session.get(url=url)
 			results = response.json()
 		
 		# We are at the end of the results, stop looping
@@ -251,7 +252,7 @@ def get_committee_reports():
 	global api_key
 	while loop:
 		url = "https://api.congress.gov/v3/committee-report?api_key=%s&offset=%s&limit=%s&format=json" % (next(api_key), offset, limit)
-		response = requests.get(url=url)
+		response = requests_session.get(url=url)
 		results = response.json()
 		
 		rate_limit, rate_limit_remaining = get_rate_limit(response)
@@ -260,7 +261,7 @@ def get_committee_reports():
 			print("Waiting 60 Minutes To Try Again...")
 			time.sleep(60*60)
 			
-			response = requests.get(url=url)
+			response = requests_session.get(url=url)
 			results = response.json()
 		
 		# We are at the end of the results, stop looping
@@ -290,6 +291,56 @@ def get_committee_reports():
 				time.sleep(60*60)
 			
 				data = get_json(url=committee_report["url"], api_key=next(api_key))
+			
+			yield key, data, count, total
+
+		offset += limit
+
+def get_treaties():
+	offset: int = 0
+	limit: int = 250
+	loop: bool = True
+	
+	global api_key
+	while loop:
+		url = "https://api.congress.gov/v3/treaty?api_key=%s&offset=%s&limit=%s&format=json" % (next(api_key), offset, limit)
+		response = requests_session.get(url=url)
+		results = response.json()
+		
+		rate_limit, rate_limit_remaining = get_rate_limit(response)
+		if response.status_code != 200:
+			print(results["error"]["message"])
+			print("Waiting 60 Minutes To Try Again...")
+			time.sleep(60*60)
+			
+			response = requests_session.get(url=url)
+			results = response.json()
+		
+		# We are at the end of the results, stop looping
+		if ("next" not in results["pagination"]):
+			loop = False
+		
+		total = results["pagination"]["count"]
+		count = offset-1
+
+		for treaty in results["treaties"]:
+			count += 1
+			session = treaty["congress"]
+			treaty_number = treaty["treatyNum"]
+			key = "usa/federal/congress/treaties/%s/%s/data.json" % (session, treaty_number)
+			
+			# TODO: Make Better Restart Check
+			if (os.path.exists("local/%s" % key)):
+				continue
+			
+			data = get_json(url=treaty["url"], api_key=next(api_key))
+			
+			if "error" in data:
+				print(data["error"]["message"])
+				print("Waiting 60 Minutes To Try Again...")
+				time.sleep(60*60)
+			
+				data = get_json(url=treaty["url"], api_key=next(api_key))
 			
 			yield key, data, count, total
 
@@ -335,9 +386,18 @@ def download_committee_reports(config):
 		save_local(key="local/%s" % key, body=report_text)
 		upload_file(config=config['s3'], key=key, body=report_text)
 
+def download_treaties(config):
+	for key, treaty, count, total in get_treaties():
+		treaty_text = json.dumps(treaty)
+		
+		print("Uploading Treaty (%s, %s): %s" % (humanize.intcomma(count), humanize.intcomma(total), key))
+		save_local(key="local/%s" % key, body=treaty_text)
+		upload_file(config=config['s3'], key=key, body=treaty_text)
+
 if __name__ == "__main__":
 	config, s3, api_key = get_config()
-	download_bills(config)
-	download_members(config)
-	download_committee_reports(config)
-	download_amendments(config)
+	#download_bills(config)
+	#download_members(config)
+	#download_committee_reports(config)
+	#download_amendments(config)
+	download_treaties(config)

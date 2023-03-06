@@ -91,6 +91,14 @@ def get_key(url: str):
 	elif split[0] == "treaty":
 		split[0] = "treaties"
 	
+	#summaries
+	#committees
+	#nominations
+	#house-communication
+	#senate-communication
+	#congressional-record
+	#house-requirement
+	
 	partial = "/".join(split)
 	key = "usa/federal/congress/%s/data.json" % partial
 	
@@ -142,9 +150,7 @@ def get_json(api_key: str, url: str):
 	return results
 
 download_count: int = 0
-def download_file(url: str):
-	return
-	
+def download_file(url: str):	
 	global api_key
 	global config
 	global download_count
@@ -316,34 +322,49 @@ def download_data(path: str):
 			treaty: dict = contents["treaty"]
 			actions: str = treaty["actions"]["url"] if "actions" in treaty else None
 			
-			treaty.pop('actions', None)
+			#treaty.pop('actions', None)
 			
-			for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				print("Treaty - %s: %s" % (path, value))
+			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				#print("Treaty - %s: %s" % (path, value))
 		elif "summaries" in contents:
 			summaries: dict = contents["summaries"]
 			
 			#summaries.pop('actions', None)
 			
-			for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				print("Summaries - %s: %s" % (path, value))
+			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				#print("Summaries - %s: %s" % (path, value))
 		elif "committees" in contents:
 			committees: dict = contents["committees"]
 			
 			#committees.pop('actions', None)
 			
-			for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				print("Committees - %s: %s" % (path, value))
+			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				#print("Committees - %s: %s" % (path, value))
 		elif "nominations" in contents:
-			pass
+			nominations: dict = contents["nominations"]
+			
+			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				#print("Nominations - %s: %s" % (path, value))
 		elif "house-communication" in contents:
-			pass
+			houseCommunication: dict = contents["house-communication"]
+			
+			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				#print("House Communication - %s: %s" % (path, value))
 		elif "senate-communication" in contents:
-			pass
+			senateCommunication: dict = contents["senate-communication"]
+			
+			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				#print("Senate Communication - %s: %s" % (path, value))
 		elif "congressional-record" in contents:
-			pass
+			congressionalRecord: dict = contents["congressional-record"]
+			
+			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				#print("Congressional Record - %s: %s" % (path, value))
 		elif "house-requirement" in contents:
-			pass
+			houseRequirement: dict = contents["house-requirement"]
+			
+			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				#print("House Requirement - %s: %s" % (path, value))
 		else:
 			# TODO: Find URLs From Other Files and Check If Already Downloaded
 			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
