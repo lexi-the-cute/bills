@@ -88,6 +88,8 @@ def get_key(url: str):
 		split[0] = "members"
 	elif split[0] == "committee-report":
 		split[0] = "committee-reports"
+	elif split[0] == "treaty":
+		split[0] = "treaties"
 	
 	partial = "/".join(split)
 	key = "usa/federal/congress/%s/data.json" % partial
@@ -308,6 +310,14 @@ def download_data(path: str):
 			download_file(url=actions)
 			download_file(url=sponsoredLegislation)
 			download_file(url=cosponsoredLegislation)
+		elif "treaty" in contents:
+			treaty: dict = contents["treaty"]
+			actions: str = treaty["actions"]["url"] if "actions" in treaty else None
+			
+			#treaty.pop('actions', None)
+			
+			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				#print("Treaty - %s: %s" % (path, value))
 		else:
 			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
 				#print("Other - %s: %s" % (path, value))
