@@ -10,7 +10,7 @@ import humanize
 
 from urllib.parse import urlparse
 
-total: int = 2166447-9848
+total: int = 1815300
 
 def load_config():
 	with open('config.yml', 'r') as fi:
@@ -318,6 +318,40 @@ def download_data(path: str):
 			
 			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
 				#print("Treaty - %s: %s" % (path, value))
+		elif "actions" in contents:
+			pass
+		elif "subjects" in contents:
+			pass
+		elif "summaries" in contents:
+			pass
+		elif "titles" in contents:
+			pass
+		elif "committees" in contents:
+			pass
+		
+		# TODO: Verify Existence Of Below Categories
+		#elif "cosponsors" in contents:
+			#pass
+		#elif "relatedBills" in contents:
+			#pass
+		#elif "text" in contents:
+			#pass
+		#elif "reports" in contents:
+			#pass
+		#elif "nominations" in contents:
+			#pass
+		#elif "house-communication" in contents:
+			#pass
+		#elif "senate-communication" in contents:
+			#pass
+		#elif "sponsored-legislation" in contents:
+			#pass
+		#elif "cosponsored-legislation" in contents:
+			#pass
+		#elif "congressional-record" in contents:
+			#pass
+		#elif "house-requirement" in contents:
+			#pass
 		else:
 			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
 				#print("Other - %s: %s" % (path, value))
