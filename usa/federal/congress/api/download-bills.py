@@ -452,7 +452,7 @@ def get_house_communications():
 			session = houseCommunication["congress"]
 			houseCommunicationCode = houseCommunication["communicationType"]["code"].lower()
 			houseCommunicationNumber = houseCommunication["number"]
-			key = "usa/federal/congress/house-communication/%s/%s/%s/data.json" % (session, houseCommunicationCode, houseCommunicationNumber)
+			key = "usa/federal/congress/house-communications/%s/%s/%s/data.json" % (session, houseCommunicationCode, houseCommunicationNumber)
 			
 			# TODO: Make Better Restart Check
 			if (os.path.exists("local/%s" % key)):
@@ -511,7 +511,7 @@ def get_senate_communications():
 			session = senateCommunication["congress"]
 			senateCommunicationCode = senateCommunication["communicationType"]["code"].lower()
 			senateCommunicationNumber = senateCommunication["number"]
-			key = "usa/federal/congress/senate-communication/%s/%s/%s/data.json" % (session, senateCommunicationCode, senateCommunicationNumber)
+			key = "usa/federal/congress/senate-communications/%s/%s/%s/data.json" % (session, senateCommunicationCode, senateCommunicationNumber)
 			
 			# TODO: Make Better Restart Check
 			if (os.path.exists("local/%s" % key)):
@@ -749,7 +749,7 @@ if __name__ == "__main__":
 	#download_amendments(config)
 	#download_treaties(config)
 	#download_committees(config)
-	download_house_requirement(config)
-	download_house_communications(config)
+	#download_house_requirement(config)
+	#download_house_communications(config)
 	download_nominations(config)
 	download_senate_communications(config)
