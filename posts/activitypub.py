@@ -102,7 +102,7 @@ def path_actor(short_id: str):
 		]
 	}
 	
-	if "application/activity+json" in accepted or disable_redirect:
+	if accepted is not None and "application/activity+json" in accepted or disable_redirect:
 		resp = flask.Response(json.dumps(actor))
 		resp.headers['Content-Type'] = 'application/activity+json; charset=utf-8'
 	else:
@@ -202,7 +202,7 @@ def path_post(short_id: str, post_id: str):
 			"%s/users/%s/followers" % (ap["web_domain"], short_id),
 		],
 		"sensitive": False,
-		"content": "<p>:bill: This is a test post :bill:</p>",
+		"content": "<p>:bill: This is a test post under the account, \"%s\" and with the id, \"%s\"</p>" % (short_id, post_id),
 		"tag": [
 			{
 				"id": "%s/emojis/bill" % ap["web_domain"],
@@ -223,7 +223,8 @@ def path_post(short_id: str, post_id: str):
 	
 	return resp
 
-@app.route("/users/<short_id>/posts/<post_id>/activity")
+# TODO: Determine if this is important
+#@app.route("/users/<short_id>/posts/<post_id>/activity")
 def path_post_activity(short_id: str, post_id: str):
 	global ap
 	
@@ -336,12 +337,13 @@ def path_outbox(short_id: str):
 		],
 		"id": "%s/users/%s/outbox" % (ap["web_domain"], short_id),
 		"type": "OrderedCollectionPage",
-		"totalItems": 1,
+		"totalItems": 0,
 		#"next": "%s/users/%s/outbox?max_id=%s" % (ap["web_domain"], short_id, 2),
 		#"prev": "%s/users/%s/outbox?min_id=%s" % (ap["web_domain"], short_id, 0),
 		#"partOf": "%s/users/%s/outbox" % (ap["web_domain"], short_id),
 		"orderedItems": [
-			message
+			# TODO: Determine how to get outbox working
+			#message
 		]
 	}
 	
@@ -400,6 +402,12 @@ def path_actor_html(short_id: str):
 
 @app.route("/@<short_id>/<post_id>")
 def path_post_html(short_id: str, post_id: str):
+	accepted: str = flask.request.headers.get('Accept')
+	if accepted is not None and "application/activity+json" in accepted:
+		resp = flask.Response("", 302)
+		resp.headers['Location'] = "%s/users/%s/posts/%s" % (ap["web_domain"], short_id, post_id)
+		return resp
+	
 	html: str = """
 		<!DOCTYPE html>
 		<html>
