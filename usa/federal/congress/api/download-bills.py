@@ -751,5 +751,5 @@ if __name__ == "__main__":
 	#download_committees(config)
 	#download_house_requirement(config)
 	#download_house_communications(config)
-	download_nominations(config)
 	download_senate_communications(config)
+	download_nominations(config)
