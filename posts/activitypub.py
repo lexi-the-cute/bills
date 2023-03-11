@@ -29,6 +29,18 @@ def get_config():
 	
 	return config, activitypub
 
+def has_matching_mime_type(accepted: str):
+	if accepted is None:
+		return False
+	
+	if 'application/activity+json' in accepted:
+		return True
+	
+	if 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' in accepted:
+		return True
+	
+	return False
+
 @app.route("/users/<short_id>")
 def path_actor(short_id: str):
 	global ap
@@ -102,7 +114,7 @@ def path_actor(short_id: str):
 		]
 	}
 	
-	if accepted is not None and "application/activity+json" in accepted or disable_redirect:
+	if has_matching_mime_type(accepted):
 		resp = flask.Response(json.dumps(actor))
 		resp.headers['Content-Type'] = 'application/activity+json; charset=utf-8'
 	else:
@@ -403,7 +415,7 @@ def path_actor_html(short_id: str):
 @app.route("/@<short_id>/<post_id>")
 def path_post_html(short_id: str, post_id: str):
 	accepted: str = flask.request.headers.get('Accept')
-	if accepted is not None and "application/activity+json" in accepted:
+	if has_matching_mime_type(accepted):
 		resp = flask.Response("", 302)
 		resp.headers['Location'] = "%s/users/%s/posts/%s" % (ap["web_domain"], short_id, post_id)
 		return resp
