@@ -399,6 +399,7 @@ def path_actor_html(short_id: str):
 		<head>
 			<meta charset="UTF-8"> 
 			<title>User: %s</title>
+			<link rel="icon" type="image/png" href="/images/emojis/bill">
 			<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		</head>
 		<body>
@@ -426,6 +427,7 @@ def path_post_html(short_id: str, post_id: str):
 		<head>
 			<meta charset="UTF-8"> 
 			<title>Post: %s</title>
+			<link rel="icon" type="image/png" href="/images/emojis/bill">
 			<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		</head>
 		<body>
