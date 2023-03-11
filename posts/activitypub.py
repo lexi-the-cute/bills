@@ -53,7 +53,10 @@ def path_actor(short_id: str):
 	actor: dict = {
 		"@context": [
 			"https://www.w3.org/ns/activitystreams",
-			"https://w3id.org/security/v1"
+			"https://w3id.org/security/v1",
+			{
+				"isCat": "misskey:isCat"
+			}
 		],
 		"id": "%s/users/%s" % (ap["web_domain"], short_id),
 		"type": "Service",
@@ -80,6 +83,7 @@ def path_actor(short_id: str):
 			<p>Friendly Disclaimer: This bot can generate any response that is not intentional or monitored. The author is not responsible.</p>
 		""",
 		"published": "1789-03-04T00:00:00Z",
+		"isCat": ap["is_cat"],
 		"icon": {
 			"type": "Image",
 			"mediaType": "image/png",

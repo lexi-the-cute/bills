@@ -25,6 +25,7 @@ activitypub:
     web_domain: "http://localhost"
     certificate_path: "/etc/letsencrypt/live/.../fullchain.pem"
     private_key_path: "/etc/letsencrypt/live/.../privkey.pem"
+    is_cat: true
     activitypub_public_key: "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
     activitypub_private_key: "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
     logo: "../images/logo.png"
