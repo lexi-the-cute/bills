@@ -10,7 +10,8 @@ import humanize
 
 from urllib.parse import urlparse
 
-total: int = 165143
+#total: int = 2542306  # 3090195
+total: int = 114867
 
 def load_config():
 	with open('config.yml', 'r') as fi:
@@ -90,6 +91,8 @@ def get_key(url: str):
 		split[0] = "committee-reports"
 	elif split[0] == "treaty":
 		split[0] = "treaties"
+	elif split[0] == "committee":
+		split[0] = "committees"
 	
 	#summaries
 	#committees
@@ -198,31 +201,10 @@ def download_data(path: str):
 			amendments: str = bill["amendments"]["url"] if "amendments" in bill else None
 			
 			# Array
-			sponsors: str = bill["sponsors"][0]["url"] if "sponsors" in bill else None
-			committeeReports: str = bill["committeeReports"][0]["url"] if "committeeReports" in bill else None
-			notes: str = bill["notes"][0] if "notes" in bill else {}
-			notes: str = notes["links"][0]["url"] if "links" in notes and len(notes["links"]) > 0 else None
-			cboCostEstimates: str = bill["cboCostEstimates"][0]["url"] if "cboCostEstimates" in bill else None
-			
-			#bill.pop('actions', None)
-			#bill.pop('textVersions', None)
-			#bill.pop('titles', None)
-			#bill.pop('committees', None)
-			#bill.pop('cosponsors', None)
-			#bill.pop('subjects', None)
-			#bill.pop('summaries', None)
-			#bill.pop('relatedBills', None)
-			#bill.pop('amendments', None)
-			
-			# Array
-			#bill.pop('sponsors', None)
-			#bill.pop('committeeReports', None)
-			#bill.pop('notes', None)
-			#bill.pop('cboCostEstimates', None)
-			
-			
-			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				#print("Bill - %s: %s" % (path, value))
+			sponsors: str = bill["sponsors"] if "sponsors" in bill else []
+			committeeReports: str = bill["committeeReports"] if "committeeReports" in bill else []
+			cboCostEstimates: str = bill["cboCostEstimates"] if "cboCostEstimates" in bill else []
+			notes: str = bill["notes"] if "notes" in bill else {}
 			
 			download_file(url=actions)
 			download_file(url=textVersions)
@@ -234,29 +216,62 @@ def download_data(path: str):
 			download_file(url=relatedBills)
 			download_file(url=amendments)
 			
-			# TODO: Implement Reading Arrays
-			#download_file(url=sponsors)
-			#download_file(url=committeeReports)
-			#download_file(url=notes)
-			#download_file(url=cboCostEstimates)
+			for sponsor in sponsors:
+				download_file(url=sponsor["url"])
 			
+			for report in committeeReports:
+				download_file(url=report["url"])
+			
+			for cboCostEstimate in cboCostEstimates:
+				download_file(url=cboCostEstimate["url"])
+			
+			for item in notes:
+				links: str = item["links"] if "links" in item and len(item["links"]) > 0 else []
+				
+				for link in links:
+					download_file(url=link["url"])
+			
+			bill.pop('actions', None)
+			bill.pop('textVersions', None)
+			bill.pop('titles', None)
+			bill.pop('committees', None)
+			bill.pop('cosponsors', None)
+			bill.pop('subjects', None)
+			bill.pop('summaries', None)
+			bill.pop('relatedBills', None)
+			bill.pop('amendments', None)
+			
+			# Array
+			bill.pop('sponsors', None)
+			bill.pop('committeeReports', None)
+			bill.pop('cboCostEstimates', None)
+			bill.pop('notes', None)
+			
+			for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				print("Bill - %s: %s" % (path, value))
 		elif "committeeReports" in contents:
 			committeeReports: dict = contents["committeeReports"]
-			committees: str = committeeReports[0]["committees"][0]["url"] if "committees" in committeeReports else None
-			associatedBill: str = committeeReports[0]["associatedBill"][0]["url"] if "associatedBill" in committeeReports else None
-			associatedTreaties: str = committeeReports[0]["associatedTreaties"][0]["url"] if "associatedTreaties" in committeeReports else None
 			
-			#committeeReports[0].pop('committees', None)
-			#committeeReports[0].pop('associatedBill', None)
-			#committeeReports[0].pop('associatedTreaties', None)
-			
-			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				#print("Committee Reports - %s: %s" % (path, value))
+			for report in committeeReports:
+				committees: str = report["committees"] if "committees" in report else None
+				associatedBill: str = report["associatedBill"] if "associatedBill" in report else []
+				associatedTreaties: str = report["associatedTreaties"] if "associatedTreaties" in report else None
 				
-			# TODO: Implement Reading Arrays
-			#download_file(url=committees)
-			#download_file(url=associatedBill)
-			#download_file(url=associatedTreaties)
+				for committee in committees:
+					download_file(url=committee["url"])
+					
+				for bill in associatedBill:
+					download_file(url=bill["url"])
+					
+				for treaty in associatedTreaties:
+					download_file(url=treaty["url"])
+			
+				report.pop('committees', None)
+				report.pop('associatedBill', None)
+				report.pop('associatedTreaties', None)
+			
+			for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				print("Committee Reports - %s: %s" % (path, value))
 		elif "amendment" in contents:
 			amendment: dict = contents["amendment"]
 			actions: str = amendment["actions"]["url"] if "actions" in amendment else None
@@ -267,29 +282,12 @@ def download_data(path: str):
 			amendedTreaty: str = amendment["amendedTreaty"]["url"] if "amendedTreaty" in amendment else None
 			
 			# Array
-			sponsors: str = amendment["sponsors"][0]["url"] if "sponsors" in amendment else None
+			sponsors: str = amendment["sponsors"] if "sponsors" in amendment else []
 			latestAction: str = amendment["latestAction"] if "latestAction" in amendment else {}
-			latestAction: str = latestAction["links"][0]["url"] if "links" in latestAction else None
-			links: str = amendment["links"][0]["url"] if "links" in amendment else None
-			notes: str = amendment["notes"][0] if "notes" in amendment else {}
-			notes: str = notes["links"][0]["url"] if "links" in notes and len(notes["links"]) > 0 else None
+			latestAction: str = latestAction["links"] if "links" in latestAction else []
+			links: str = amendment["links"] if "links" in amendment else []
+			notes: str = amendment["notes"] if "notes" in amendment else {}
 			
-			#amendment.pop('actions', None)
-			#amendment.pop('cosponsors', None)
-			#amendment.pop('amendedBill', None)
-			#amendment.pop('amendedAmendment', None)
-			#amendment.pop('amendmentsToAmendment', None)
-			#amendment.pop('amendedTreaty', None)
-			
-			# Array
-			#amendment.pop('sponsors', None)
-			#amendment.pop('latestAction', None)
-			#amendment.pop('links', None)
-			#amendment.pop('notes', None)
-			
-			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				#print("Amendment - %s: %s" % (path, value))
-				
 			download_file(url=actions)
 			download_file(url=cosponsors)
 			download_file(url=amendedBill)
@@ -297,74 +295,124 @@ def download_data(path: str):
 			download_file(url=amendmentsToAmendment)
 			download_file(url=amendedTreaty)
 			
-			# TODO: Implement Reading Arrays
-			#download_file(url=sponsors)
-			#download_file(url=latestAction)
-			#download_file(url=links)
-			#download_file(url=notes)
+			for item in sponsors:
+				download_file(url=item["url"])
+				
+			for item in latestAction:
+				download_file(url=item["url"])
+				
+			for item in links:
+				download_file(url=item["url"])
+				
+			for item in notes:
+				links: str = item["links"] if "links" in item and len(item["links"]) > 0 else []
+				
+				for link in links:
+					download_file(url=link["url"])
+			
+			amendment.pop('actions', None)
+			amendment.pop('cosponsors', None)
+			amendment.pop('amendedBill', None)
+			amendment.pop('amendedAmendment', None)
+			amendment.pop('amendmentsToAmendment', None)
+			amendment.pop('amendedTreaty', None)
+			
+			# Array
+			amendment.pop('sponsors', None)
+			amendment.pop('latestAction', None)
+			amendment.pop('links', None)
+			amendment.pop('notes', None)
+			
+			for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				print("Amendment - %s: %s" % (path, value))
 		elif "member" in contents:
 			member: dict = contents["member"]
 			actions: str = member["actions"]["url"] if "actions" in member else None
 			sponsoredLegislation: str = member["sponsoredLegislation"]["url"] if "sponsoredLegislation" in member else None
 			cosponsoredLegislation: str = member["cosponsoredLegislation"]["url"] if "cosponsoredLegislation" in member else None
 			
-			#member.pop('actions', None)
-			#member.pop('sponsoredLegislation', None)
-			#member.pop('cosponsoredLegislation', None)
-			
-			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				#print("Member - %s: %s" % (path, value))
-				
 			download_file(url=actions)
 			download_file(url=sponsoredLegislation)
 			download_file(url=cosponsoredLegislation)
+			
+			member.pop('actions', None)
+			member.pop('sponsoredLegislation', None)
+			member.pop('cosponsoredLegislation', None)
+			
+			for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				print("Member - %s: %s" % (path, value))
 		elif "treaty" in contents:
 			treaty: dict = contents["treaty"]
 			actions: str = treaty["actions"]["url"] if "actions" in treaty else None
+			relatedDocs: str = treaty["relatedDocs"] if "relatedDocs" in treaty else None
 			
-			#treaty.pop('actions', None)
+			download_file(url=actions)
 			
-			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				#print("Treaty - %s: %s" % (path, value))
+			for item in relatedDocs:
+				download_file(url=item["url"])
+			
+			treaty.pop('actions', None)
+			treaty.pop('relatedDocs', None)
+			
+			for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				print("Treaty - %s: %s" % (path, value))
 		elif "summaries" in contents:
 			summaries: dict = contents["summaries"]
 			
 			#summaries.pop('actions', None)
 			
-			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				#print("Summaries - %s: %s" % (path, value))
+			for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				print("Summaries - %s: %s" % (path, value))
 		elif "committees" in contents:
 			committees: dict = contents["committees"]
 			
-			#committees.pop('actions', None)
+			#for item in committees:
+				#download_file(url=item["url"])
+				
+			#committees.pop('committees', None)
 			
-			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
+			for (path, value) in dpath.search(contents, '**/url', yielded=True):
 				#print("Committees - %s: %s" % (path, value))
+				download_file(url=value)
 		elif "nominations" in contents:
 			nominations: dict = contents["nominations"]
 			
-			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				#print("Nominations - %s: %s" % (path, value))
+			for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				print("Nominations - %s: %s" % (path, value))
 		elif "house-communication" in contents:
 			houseCommunication: dict = contents["house-communication"]
 			
-			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				#print("House Communication - %s: %s" % (path, value))
+			committees: str = houseCommunication["committees"] if "committees" in houseCommunication else None
+			
+			for item in committees:
+				download_file(url=item["url"])
+				
+			houseCommunication.pop('committees', None)
+			
+			for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				print("House Communication - %s: %s" % (path, value))
 		elif "senate-communication" in contents:
 			senateCommunication: dict = contents["senate-communication"]
 			
-			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				#print("Senate Communication - %s: %s" % (path, value))
+			committees: str = senateCommunication["committees"] if "committees" in senateCommunication else None
+			
+			for item in committees:
+				download_file(url=item["url"])
+				
+			senateCommunication.pop('committees', None)
+			
+			for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				print("Senate Communication - %s: %s" % (path, value))
 		elif "congressional-record" in contents:
 			congressionalRecord: dict = contents["congressional-record"]
 			
-			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				#print("Congressional Record - %s: %s" % (path, value))
+			for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				print("Congressional Record - %s: %s" % (path, value))
 		elif "house-requirement" in contents:
 			houseRequirement: dict = contents["house-requirement"]
 			
-			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				#print("House Requirement - %s: %s" % (path, value))
+			for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				print("House Requirement - %s: %s" % (path, value))
 		else:
 			# TODO: Find URLs From Other Files and Check If Already Downloaded
 			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
