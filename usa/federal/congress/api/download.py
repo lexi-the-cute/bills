@@ -110,6 +110,23 @@ def get_key(url: str):
 def exists(key: str):
 	return os.path.exists("local/%s" % key)
 
+def process_non_json_file(url, mime, body):
+	if url.startswith("https://www.congress.gov/"):
+		# print("Skipping Human Congress Link")
+		return None
+	elif url.startswith("https://clerk.house.gov/"):
+		# print("Skipping House Clerk Link")
+		return None
+	elif url.startswith("https://www.senate.gov/"):
+		# print("Skipping Senate Link")
+		return None
+	elif url.startswith("https://www.cbo.gov/"):
+		# print("Skipping CBO Link")
+		return None
+
+	return None
+
+
 session = requests.Session()
 def get_json(api_key: str, url: str):
 	global session
@@ -122,6 +139,12 @@ def get_json(api_key: str, url: str):
 	url: str = "%s://%s%s?api_key=%s&format=json" % (scheme, netloc, path, api_key)
 	
 	response = session.get(url=url)
+	headers = response.headers
+	content_type = headers.get('content-type')
+
+	if content_type != "application/json":
+		return process_non_json_file(url=url, mime=content_type, body=response.content)
+
 	try:
 		results = response.json()
 	except:
@@ -415,9 +438,9 @@ def download_data(path: str):
 				print("House Requirement - %s: %s" % (path, value))
 		else:
 			# TODO: Find URLs From Other Files and Check If Already Downloaded
-			#for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				#print("Other - %s: %s" % (path, value))
-				#download_file(url=value)
+			for (path, value) in dpath.search(contents, '**/url', yielded=True):
+				print("Other - %s: %s" % (path, value))
+				download_file(url=value)
 				
 			pass
 
