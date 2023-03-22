@@ -93,10 +93,11 @@ def get_key(url: str):
 		split[0] = "treaties"
 	elif split[0] == "committee":
 		split[0] = "committees"
-	
+	elif split[0] == "nomination":
+		split[0] = "nominations"
+
 	#summaries
 	#committees
-	#nominations
 	#house-communication
 	#senate-communication
 	#congressional-record
@@ -439,7 +440,7 @@ def download_data(path: str):
 		else:
 			# TODO: Find URLs From Other Files and Check If Already Downloaded
 			for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				print("Other - %s: %s" % (path, value))
+				# print("Other - %s: %s" % (path, value))
 				download_file(url=value)
 				
 			pass
