@@ -401,6 +401,10 @@ def download_data(path: str):
 		elif "nominations" in contents:
 			nominations: dict = contents["nominations"]
 			
+			for item in nominations:
+				download_file(url=item["url"])
+				nominations.pop(item, None)
+
 			for (path, value) in dpath.search(contents, '**/url', yielded=True):
 				print("Nominations - %s: %s" % (path, value))
 		elif "house-communication" in contents:
