@@ -11,23 +11,23 @@ def scantree(path: str = "local", n: int = 0):
 
 def listtree(path: str = "local", n: int = 0):
     for entry in os.listdir(path=path):
-        if entry.is_dir():
+        if os.path.isdir(os.path.join(path, entry)):
             n = listtree(path=os.path.join(path, entry.name), n=n)
-        if entry.name.endswith(".json"):
+        if entry.endswith(".json"):
             n += 1
     
     return n
 
 def scandir():
     n, t = 0, time.time()
-    scantree(path="local", n=0)
+    n = scantree(path="local", n=0)
 
     t = time.time() - t
     print("os.scandir (scantree): %.4fs, %d files found\n" % (t, n))
 
 def listdir():
     n, t = 0, time.time()
-    listtree(path="local", n=0)
+    n = listtree(path="local", n=0)
 
     t = time.time() - t
     print("os.listdir (listtree): %.4fs, %d files found\n" % (t, n))
