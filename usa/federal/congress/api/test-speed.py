@@ -1,4 +1,4 @@
-import os, time, glob, humanize
+import os, time, glob, humanize, datetime
 
 def scantree(path: str = "local", n: int = 0):
     for entry in os.scandir(path=path):
@@ -23,14 +23,14 @@ def scandir():
     n = scantree(path="local", n=0)
 
     t = time.time() - t
-    print("os.scandir (scantree): %s, %s files found\n" % (humanize.timedelta(seconds=t), humanize.intcomma(n)))
+    print("os.scandir (scantree): %s, %s files found\n" % (humanize.naturaldelta(datetime.timedelta(seconds=t)), humanize.intcomma(n)))
 
 def listdir():
     n, t = 0, time.time()
     n = listtree(path="local", n=0)
 
     t = time.time() - t
-    print("os.listdir (listtree): %s, %s files found\n" % (humanize.timedelta(seconds=t), humanize.intcomma(n)))
+    print("os.listdir (listtree): %s, %s files found\n" % (humanize.naturaldelta(datetime.timedelta(seconds=t)), humanize.intcomma(n)))
 
 def iglob():
     n, t = 0, time.time()
@@ -38,7 +38,7 @@ def iglob():
         n += 1
 
     t = time.time() - t
-    print("glob.iglob: %s, %s files found\n" % (humanize.timedelta(seconds=t), humanize.intcomma(n)))
+    print("glob.iglob: %s, %s files found\n" % (humanize.naturaldelta(datetime.timedelta(seconds=t)), humanize.intcomma(n)))
 
 def walk():
     n, t = 0, time.time()
@@ -48,7 +48,7 @@ def walk():
                 n += 1
 
     t = time.time() - t
-    print("os.walk: %s, %s files found\n" % (humanize.timedelta(seconds=t), humanize.intcomma(n)))
+    print("os.walk: %s, %s files found\n" % (humanize.naturaldelta(datetime.timedelta(seconds=t)), humanize.intcomma(n)))
 
 if __name__ == "__main__":
     print("Testing os.scandir...")
