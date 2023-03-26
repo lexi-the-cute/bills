@@ -12,7 +12,7 @@ def scantree(path: str = "local", n: int = 0):
 def listtree(path: str = "local", n: int = 0):
     for entry in os.listdir(path=path):
         if os.path.isdir(os.path.join(path, entry)):
-            n = listtree(path=os.path.join(path, entry.name), n=n)
+            n = listtree(path=os.path.join(path, entry), n=n)
         if entry.endswith(".json"):
             n += 1
     
@@ -54,11 +54,11 @@ if __name__ == "__main__":
     print("Testing os.scandir...")
     scandir()
 
+    print("Testing os.walk...")
+    walk()
+
     print("Testing os.listdir...")
     listdir()
 
     print("Testing glob.iglob...")
     iglob()
-
-    print("Testing os.walk...")
-    walk()
