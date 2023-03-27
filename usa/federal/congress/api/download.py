@@ -265,7 +265,9 @@ def signal_handler(sig, frame) -> None:
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
+    gc.enable()
     hide_cursor(hide=True)
     count_bills()
+    gc.setdebug(gc.DEBUG_LEAK)
     read_bills()
     hide_cursor(hide=False)
