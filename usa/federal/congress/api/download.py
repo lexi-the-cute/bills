@@ -268,6 +268,6 @@ if __name__ == "__main__":
     gc.enable()
     hide_cursor(hide=True)
     count_bills()
-    gc.setdebug(gc.DEBUG_LEAK)
+    gc.set_debug(gc.DEBUG_LEAK)
     read_bills()
     hide_cursor(hide=False)
