@@ -1,4 +1,3 @@
-import gc
 import os
 import csv
 import sys
@@ -85,10 +84,6 @@ def download_file(url: str) -> None:
     global read_bills_start_time
     global session
 
-    # Note: For some reason, Python's not garbage collecting, so I keep getting oom-kill
-    if line % 100000 == 0:
-        gc.collect()
-
     key: str = get_key(url=url)
 
     line += 1
@@ -114,6 +109,7 @@ def download_file(url: str) -> None:
         "format": "json"
     }
 
+    # TODO: Figure out how to stream file to s3 bucket and to local filesystem
     response = session.get(url=url, params=params)
     content_type = response.headers.get('content-type')
 
@@ -265,9 +261,7 @@ def signal_handler(sig, frame) -> None:
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
-    gc.enable()
     hide_cursor(hide=True)
     count_bills()
-    gc.set_debug(gc.DEBUG_LEAK)
     read_bills()
     hide_cursor(hide=False)
