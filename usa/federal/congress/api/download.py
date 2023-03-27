@@ -1,465 +1,266 @@
 import os
-import yaml
+import csv
+import sys
 import json
 import time
+import yaml
 import boto3
 import dpath
-import random
-import requests
+import signal
+import datetime
 import humanize
+import requests
 
-from urllib.parse import urlparse
+from typing import Generator
+from urllib.parse import urlparse, ParseResult
+from botocore.client import BaseClient
 
-#total: int = 2542306  # 3090195
-total: int = 903930
+# Note: With Generator[yield, send, return], you can send to a yield via "received = yield ..."
 
-def load_config():
-	with open('config.yml', 'r') as fi:
-		return yaml.safe_load(fi)
+rename: dict = {
+    "amendment": "amendments",
+    "bill": "bills",
+    "member": "members",
+    "committee-report": "committee-reports",
+    "treaty": "treaties",
+    "committee": "committees",
+    "nomination": "nominations",
+    # "summary": "summaries",
+    # "house-communication": "house-communications",
+    # "senate-communication": "senate-communications",
+    # "congressional-record": "congressional-records",
+    # "house-requirement": "house-requirements"
+}
 
-def get_config():
-	config = load_config()
-	s3 = load_s3_client(config['s3'])
-	
-	api_key = get_api_key(config["congress"])
-	
-	return config, s3, api_key
+skipped: list = [
+    "https://www.congress.gov",
+    "https://clerk.house.gov",
+    "https://www.senate.gov",
+    "https://www.cbo.gov"
+]
 
-def load_s3_client(config: dict):
-	return boto3.client(
-		service_name='s3',
-		aws_access_key_id=config['access_key_id'],
-		aws_secret_access_key=config['secret_access_key'],
-		endpoint_url=config['endpoint']
-	)
+def upload_file(key: str, body: str):
+    s3: BaseClient = get_s3_client()
+    bucket: str = get_default_s3_bucket()
 
-def upload_file(config: dict, key: str, body: str):
-	#data = open('test.jpg', 'rb')
-	#s3.Bucket('my-bucket').put_object(Key='test.jpg', Body=data)
-	s3.put_object(
-		Bucket=config['default_bucket'],
-		Body=body,
-		Key=key
-	)
+    s3.put_object(
+        Bucket=bucket,
+        Body=body,
+        Key=key
+    )
 
+# TODO: Figure out if I should optimize this and how to do it
 def save_local(key: str, body: str):
-	key: str = "local/%s" % key
-	path: str = os.path.dirname(key)
-	if not os.path.exists(path):
-		os.makedirs(path)
-	
-	file = open(key, 'w')
-	file.write(body)
-	file.close()
+    key: str = "local/%s" % key
+    path: str = os.path.dirname(key)
+    if not os.path.exists(path):
+        os.makedirs(path)
+    
+    file = open(key, 'w')
+    file.write(body)
+    file.close()
 
-def get_rate_limit(response):
-	# Monitor Rate Limit - 1,000 Requests Per Hour
-	rate_limit = response.headers["x-ratelimit-limit"]
-	rate_limit_remaining = response.headers["x-ratelimit-remaining"]
-	#print("Rate Limit: %s/%s" % (rate_limit_remaining, rate_limit))
-	
-	return rate_limit, rate_limit_remaining
+def get_key(url: str) -> str:
+    path: str = urlparse(url).path
+    split = path.split("/")[2:]
+    
+    # Rename Folder To Our Format
+    if split[0] in rename:
+        split[0] = rename[split[0]]
+    
+    return "usa/federal/congress/%s/data.json" % "/".join(split)
 
-def get_api_key(config):
-	#return config["api_key"]
-	
-	#return random.choice(config["keys"])
-	
-	total = len(config["keys"])
-	current = 0
-	while True:
-		yield config["keys"][current]
-		
-		if current >= total-1:
-			current = 0
-		else:
-			current += 1
+def log_error(url: str, message: str):
+    # TODO: Determine if we need to optimize writing to this file
+    with open('errors.csv', 'a') as fi:
+        row = csv.writer(fi)
+        row.writerow([url, message])
+        return
 
-def get_key(url: str):
-	path: str = urlparse(url).path
-	
-	split = path.split("/")[2:]
-	
-	# TODO: Consider Moving Paths Back To Original Names
-	if split[0] == "amendment":
-		split[0] = "amendments"
-	elif split[0] == "bill":
-		split[0] = "bills"
-	elif split[0] == "member":
-		split[0] = "members"
-	elif split[0] == "committee-report":
-		split[0] = "committee-reports"
-	elif split[0] == "treaty":
-		split[0] = "treaties"
-	elif split[0] == "committee":
-		split[0] = "committees"
-	elif split[0] == "nomination":
-		split[0] = "nominations"
-
-	#summaries
-	#committees
-	#house-communication
-	#senate-communication
-	#congressional-record
-	#house-requirement
-	
-	partial = "/".join(split)
-	key = "usa/federal/congress/%s/data.json" % partial
-	
-	return key
-
-def exists(key: str):
-	return os.path.exists("local/%s" % key)
-
-def process_non_json_file(url, mime, body):
-	if url.startswith("https://www.congress.gov/"):
-		# print("Skipping Human Congress Link")
-		return None
-	elif url.startswith("https://clerk.house.gov/"):
-		# print("Skipping House Clerk Link")
-		return None
-	elif url.startswith("https://www.senate.gov/"):
-		# print("Skipping Senate Link")
-		return None
-	elif url.startswith("https://www.cbo.gov/"):
-		# print("Skipping CBO Link")
-		return None
-
-	return None
-
-
+# TODO: This global breaks reusability, consider making a class
+line: int = 0
 session = requests.Session()
-def get_json(api_key: str, url: str):
-	global session
-	
-	# https://api.congress.gov/v3/member/A000217?format=json
-	parsed: str = urlparse(url)
-	scheme: str = parsed.scheme
-	netloc: str = parsed.netloc
-	path: str = parsed.path
-	url: str = "%s://%s%s?api_key=%s&format=json" % (scheme, netloc, path, api_key)
-	
-	response = session.get(url=url)
-	headers = response.headers
-	content_type = headers.get('content-type')
+def download_file(url: str) -> None:
+    global line
+    global read_bills_start_time
+    global session
 
-	if content_type != "application/json":
-		return process_non_json_file(url=url, mime=content_type, body=response.content)
+    key: str = get_key(url=url)
 
-	try:
-		results = response.json()
-	except:
-		print("Read JSON Error: %s" % response.text)
-		with open('json-error.log', 'a') as fi:
-			fi.write("%s,%s://%s%s\n" % (response.text, scheme, netloc, path))
-		return None
-		
-	
-	rate_limit, rate_limit_remaining = get_rate_limit(response)
-	if response.status_code != 200:
-		error = results["error"]
-		
-		if "message" in error:
-			print(error["message"])
-			print("Paused at %s://%s%s" % (scheme, netloc, path))
-			print("Waiting 60 Minutes To Try Again...")
-			time.sleep(60*60)
-		
-			response = session.get(url=url)
-			return response.json()
-		elif "matches the given query" in error:
-			print("Error: %s" % error)
-			with open('error.log', 'a') as fi:
-				fi.write("%s,%s://%s%s\n" % (error, scheme, netloc, path))
-		else:
-			print("Response: %s" % response.text)
-	
-	return results
+    line += 1
+    elapsed: str = humanize.naturaldelta(datetime.timedelta(seconds=(time.time()-read_bills_start_time)))
+    parsed: ParseResult = urlparse(url)
+    host: str = "%s://%s" % (parsed.scheme, parsed.netloc)
 
-download_count: int = 0
-def download_file(url: str):	
-	global api_key
-	global config
-	global download_count
-	global total
-	
-	if url is None:
-		return
-	
-	key: str = get_key(url=url)
-	
-	if exists(key=key):
-		return
-	
-	download_count += 1
-	#return
-	
-	results = get_json(api_key=next(api_key), url=url)
-	
-	# For When Failing To Retrieve JSON At All
-	if results is None:
-		return
-	
-	text = json.dumps(results)
-	
-	print("Uploading File (%s/%s) - %s%% - %s" % (humanize.intcomma(download_count), humanize.intcomma(total), humanize.intcomma((download_count/total)*100), key))
-	#print(results)
-	save_local(key=key, body=text)
-	upload_file(config=config['s3'], key=key, body=text)
+    # TODO: Eventually Add Support For These URLs
+    if host in skipped:
+        print("\033[K%s (%s elapsed) - Skipping %s" % (humanize.intcomma(line), elapsed, key), end="\r")
+        return
 
-def download_data(path: str):
-	with open(file=path, mode="r") as f:
-		contents: dict = json.load(f)
-		
-		#print("Path: %s" % path)
-		if "bill" in contents:
-			bill: dict = contents["bill"]
-			actions: str = bill["actions"]["url"] if "actions" in bill else None
-			textVersions: str = bill["textVersions"]["url"] if "textVersions" in bill else None
-			titles: str = bill["titles"]["url"] if "titles" in bill else None
-			committees: str = bill["committees"]["url"] if "committees" in bill else None
-			cosponsors: str = bill["cosponsors"]["url"] if "cosponsors" in bill else None
-			subjects: str = bill["subjects"]["url"] if "subjects" in bill else None
-			summaries: str = bill["summaries"]["url"] if "summaries" in bill else None
-			relatedBills: str = bill["relatedBills"]["url"] if "relatedBills" in bill else None
-			amendments: str = bill["amendments"]["url"] if "amendments" in bill else None
-			
-			# Array
-			sponsors: str = bill["sponsors"] if "sponsors" in bill else []
-			committeeReports: str = bill["committeeReports"] if "committeeReports" in bill else []
-			cboCostEstimates: str = bill["cboCostEstimates"] if "cboCostEstimates" in bill else []
-			notes: str = bill["notes"] if "notes" in bill else {}
-			
-			download_file(url=actions)
-			download_file(url=textVersions)
-			download_file(url=titles)
-			download_file(url=committees)
-			download_file(url=cosponsors)
-			download_file(url=subjects)
-			download_file(url=summaries)
-			download_file(url=relatedBills)
-			download_file(url=amendments)
-			
-			for sponsor in sponsors:
-				download_file(url=sponsor["url"])
-			
-			for report in committeeReports:
-				download_file(url=report["url"])
-			
-			for cboCostEstimate in cboCostEstimates:
-				download_file(url=cboCostEstimate["url"])
-			
-			for item in notes:
-				links: str = item["links"] if "links" in item and len(item["links"]) > 0 else []
-				
-				for link in links:
-					download_file(url=link["url"])
-			
-			bill.pop('actions', None)
-			bill.pop('textVersions', None)
-			bill.pop('titles', None)
-			bill.pop('committees', None)
-			bill.pop('cosponsors', None)
-			bill.pop('subjects', None)
-			bill.pop('summaries', None)
-			bill.pop('relatedBills', None)
-			bill.pop('amendments', None)
-			
-			# Array
-			bill.pop('sponsors', None)
-			bill.pop('committeeReports', None)
-			bill.pop('cboCostEstimates', None)
-			bill.pop('notes', None)
-			
-			for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				print("Bill - %s: %s" % (path, value))
-		elif "committeeReports" in contents:
-			committeeReports: dict = contents["committeeReports"]
-			
-			for report in committeeReports:
-				committees: str = report["committees"] if "committees" in report else None
-				associatedBill: str = report["associatedBill"] if "associatedBill" in report else []
-				associatedTreaties: str = report["associatedTreaties"] if "associatedTreaties" in report else None
-				
-				for committee in committees:
-					download_file(url=committee["url"])
-					
-				for bill in associatedBill:
-					download_file(url=bill["url"])
-					
-				for treaty in associatedTreaties:
-					download_file(url=treaty["url"])
-			
-				report.pop('committees', None)
-				report.pop('associatedBill', None)
-				report.pop('associatedTreaties', None)
-			
-			for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				print("Committee Reports - %s: %s" % (path, value))
-		elif "amendment" in contents:
-			amendment: dict = contents["amendment"]
-			actions: str = amendment["actions"]["url"] if "actions" in amendment else None
-			cosponsors: str = amendment["cosponsors"]["url"] if "cosponsors" in amendment else None
-			amendedBill: str = amendment["amendedBill"]["url"] if "amendedBill" in amendment else None
-			amendedAmendment: str = amendment["amendedAmendment"]["url"] if "amendedAmendment" in amendment else None
-			amendmentsToAmendment: str = amendment["amendmentsToAmendment"]["url"] if "amendmentsToAmendment" in amendment else None
-			amendedTreaty: str = amendment["amendedTreaty"]["url"] if "amendedTreaty" in amendment else None
-			
-			# Array
-			sponsors: str = amendment["sponsors"] if "sponsors" in amendment else []
-			latestAction: str = amendment["latestAction"] if "latestAction" in amendment else {}
-			latestAction: str = latestAction["links"] if "links" in latestAction else []
-			links: str = amendment["links"] if "links" in amendment else []
-			notes: str = amendment["notes"] if "notes" in amendment else {}
-			
-			download_file(url=actions)
-			download_file(url=cosponsors)
-			download_file(url=amendedBill)
-			download_file(url=amendedAmendment)
-			download_file(url=amendmentsToAmendment)
-			download_file(url=amendedTreaty)
-			
-			for item in sponsors:
-				download_file(url=item["url"])
-				
-			for item in latestAction:
-				download_file(url=item["url"])
-				
-			for item in links:
-				download_file(url=item["url"])
-				
-			for item in notes:
-				links: str = item["links"] if "links" in item and len(item["links"]) > 0 else []
-				
-				for link in links:
-					download_file(url=link["url"])
-			
-			amendment.pop('actions', None)
-			amendment.pop('cosponsors', None)
-			amendment.pop('amendedBill', None)
-			amendment.pop('amendedAmendment', None)
-			amendment.pop('amendmentsToAmendment', None)
-			amendment.pop('amendedTreaty', None)
-			
-			# Array
-			amendment.pop('sponsors', None)
-			amendment.pop('latestAction', None)
-			amendment.pop('links', None)
-			amendment.pop('notes', None)
-			
-			for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				print("Amendment - %s: %s" % (path, value))
-		elif "member" in contents:
-			member: dict = contents["member"]
-			actions: str = member["actions"]["url"] if "actions" in member else None
-			sponsoredLegislation: str = member["sponsoredLegislation"]["url"] if "sponsoredLegislation" in member else None
-			cosponsoredLegislation: str = member["cosponsoredLegislation"]["url"] if "cosponsoredLegislation" in member else None
-			
-			download_file(url=actions)
-			download_file(url=sponsoredLegislation)
-			download_file(url=cosponsoredLegislation)
-			
-			member.pop('actions', None)
-			member.pop('sponsoredLegislation', None)
-			member.pop('cosponsoredLegislation', None)
-			
-			for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				print("Member - %s: %s" % (path, value))
-		elif "treaty" in contents:
-			treaty: dict = contents["treaty"]
-			actions: str = treaty["actions"]["url"] if "actions" in treaty else None
-			relatedDocs: str = treaty["relatedDocs"] if "relatedDocs" in treaty else None
-			
-			download_file(url=actions)
-			
-			for item in relatedDocs:
-				download_file(url=item["url"])
-			
-			treaty.pop('actions', None)
-			treaty.pop('relatedDocs', None)
-			
-			for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				print("Treaty - %s: %s" % (path, value))
-		elif "summaries" in contents:
-			summaries: dict = contents["summaries"]
-			
-			#summaries.pop('actions', None)
-			
-			for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				print("Summaries - %s: %s" % (path, value))
-		elif "committees" in contents:
-			committees: dict = contents["committees"]
-			
-			#for item in committees:
-				#download_file(url=item["url"])
-				
-			#committees.pop('committees', None)
-			
-			for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				#print("Committees - %s: %s" % (path, value))
-				download_file(url=value)
-		elif "nominations" in contents:
-			nominations: dict = contents["nominations"]
-			
-			for item in nominations:
-				download_file(url=item["url"])
+    # Skip Download If Already Exists
+    if os.path.exists("local/%s" % key):
+        print("\033[K%s (%s elapsed) - Skipping %s" % (humanize.intcomma(line), elapsed, key), end="\r")
+        return
 
-			# nominations.pop(item, None)
+    print("\033[K%s (%s elapsed) - Downloading %s" % (humanize.intcomma(line), elapsed, key), end="\r")
+    
+    url: str = "%s://%s%s" % (parsed.scheme, parsed.netloc, parsed.path)
+    params: dict = {
+        "api_key": get_api_key(),
+        "format": "json"
+    }
 
-			# for (path, value) in dpath.search(contents, '**/url', yielded=True):
-			# 	print("Nominations - %s: %s" % (path, value))
-		elif "house-communication" in contents:
-			houseCommunication: dict = contents["house-communication"]
-			
-			committees: str = houseCommunication["committees"] if "committees" in houseCommunication else None
-			
-			for item in committees:
-				download_file(url=item["url"])
-				
-			houseCommunication.pop('committees', None)
-			
-			for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				print("House Communication - %s: %s" % (path, value))
-		elif "senate-communication" in contents:
-			senateCommunication: dict = contents["senate-communication"]
-			
-			committees: str = senateCommunication["committees"] if "committees" in senateCommunication else None
-			
-			for item in committees:
-				download_file(url=item["url"])
-				
-			senateCommunication.pop('committees', None)
-			
-			for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				print("Senate Communication - %s: %s" % (path, value))
-		elif "congressional-record" in contents:
-			congressionalRecord: dict = contents["congressional-record"]
-			
-			for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				print("Congressional Record - %s: %s" % (path, value))
-		elif "house-requirement" in contents:
-			houseRequirement: dict = contents["house-requirement"]
-			
-			for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				print("House Requirement - %s: %s" % (path, value))
-		else:
-			# TODO: Find URLs From Other Files and Check If Already Downloaded
-			for (path, value) in dpath.search(contents, '**/url', yielded=True):
-				# print("Other - %s: %s" % (path, value))
-				download_file(url=value)
-				
-			pass
+    response = session.get(url=url, params=params)
+    content_type = response.headers.get('content-type')
 
-def read_bills():
-	path: str = 'local'
-	
-	for (dirpath, dirnames, filenames) in os.walk(path):
-		for filename in filenames:
-			if filename.endswith('.json'):
-				file_path: str = os.sep.join([dirpath, filename])
-				download_data(path=file_path)
+    # TODO: Implement Handling Unknown File Types
+    if content_type != "application/json":
+        print("\033[K%s (%s elapsed) - Skipping Unknown File %s" % (humanize.intcomma(line), elapsed, key), end="\r")
+    
+    try:
+        results = response.json()
+    except:
+        print("\033[K%s (%s elapsed) - Read JSON Error: %s" % (humanize.intcomma(line), elapsed, response.text), end="\r")
+        log_error(url=url, message=response.text)
+        
+    if response.status_code != 200:
+        error = results["error"]
+
+        if "message" in error:
+            print("\033[K%s (%s elapsed) - Waiting 60 Minutes To Try Again (%s): %s" % (humanize.intcomma(line), elapsed, url, response.text), end="\r")
+            time.sleep(60*60)
+            download_file(url=url)
+        elif "matches the given query" in error:
+            print("\033[K%s (%s elapsed) - DJango Error (%s): %s" % (humanize.intcomma(line), elapsed, url, error), end="\r")
+            log_error(url=url, message=error)
+        else:
+            print("\033[K%s (%s elapsed) - Unknown Error (%s): %s" % (humanize.intcomma(line), elapsed, url, response.text), end="\r")
+            log_error(url=url, message=error)
+        
+        return
+    
+    print("\033[K%s (%s elapsed) - Uploading %s" % (humanize.intcomma(line), elapsed, key), end="\r")
+
+    text: str = json.dumps(results)
+    save_local(key=key, body=text)
+    upload_file(key=key, body=text)
+
+
+def parse_json(data: dict) -> None:
+    for (_, value) in dpath.search(data, '**/url', yielded=True):
+        # print("%s: %s" % (path, value))
+        download_file(url=value)
+
+def scantree(path: str = "local") -> Generator[str, None, None]:
+    for entry in os.scandir(path=path):
+        if entry.is_dir():
+            yield from scantree(path=os.path.join(path, entry.name))
+        if entry.name.endswith(".json"):
+            yield os.path.join(path, entry.name)
+
+# TODO: This global breaks reusability, consider making a class
+read_bills_start_time: int = -1
+def read_bills() -> None:
+    global read_bills_start_time
+    read_bills_start_time = time.time()
+
+    for file in scantree(path='local'):
+        try:
+            fd: int = os.open(file, os.O_RDONLY)
+            data: bytes = os.read(fd, os.fstat(fd).st_size)
+            contents: dict = json.loads(data)
+
+            parse_json(data=contents)
+        finally:
+            os.close(fd)
+
+    print(end="\n")
+
+def count_bills() -> int:
+    total: int = 0
+    start: int = time.time()
+    for _ in scantree(path='local'):
+        total += 1
+
+        if total % 1000 == 0:
+            current: int = time.time()
+            elapsed: str = humanize.naturaldelta(datetime.timedelta(seconds=(current-start)))
+            print("\033[KFiles: %s\tElapsed: %s" % (humanize.intcomma(total), elapsed), end="\r")
+    
+    print("\033[KTotal Files: %s\tElapsed: %s" % (humanize.intcomma(total), elapsed), end="\n")
+    print("-"*40, end="\n")
+    return total
+
+def hide_cursor(hide: bool) -> None:
+    if hide:
+        print("\033[?25l", end="\r")
+    else:
+        print("\033[?25h", end="\r")
+
+def get_s3_client() -> BaseClient:
+    with open('config.yml', 'r') as fi:
+        config: dict = yaml.safe_load(fi)
+
+    if "s3" not in config:
+        raise KeyError('Missing S3 Section From Config')
+    elif "access_key_id" not in config["s3"]:
+        raise KeyError('Missing access_key_id Section From Config["s3"]')
+    elif "secret_access_key" not in config["s3"]:
+        raise KeyError('Missing secret_access_key Section From Config["s3"]')
+    elif "endpoint" not in config["s3"]:
+        raise KeyError('Missing endpoint Section From Config["s3"]')
+
+    # TODO: Determine if there's a type that can allow autocompletion of methods such as s3.put_object(...)
+    config = config["s3"]
+    s3: BaseClient = boto3.client(
+        service_name='s3',
+        aws_access_key_id=config['access_key_id'],
+        aws_secret_access_key=config['secret_access_key'],
+        endpoint_url=config['endpoint']
+    )
+
+    return s3
+
+def get_default_s3_bucket() -> str:
+    with open('config.yml', 'r') as fi:
+        config: dict = yaml.safe_load(fi)
+
+    if "s3" not in config:
+        raise KeyError('Missing S3 Section From Config')
+    elif "default_bucket" not in config["s3"]:
+        raise KeyError('Missing default_bucket Section From Config["s3"]')
+
+    return config["s3"]["default_bucket"]
+
+def get_api_key() -> Generator[str, None, None]:
+    with open('config.yml', 'r') as fi:
+        config: dict = yaml.safe_load(fi)
+
+    if "congress" not in config:
+        raise KeyError('Missing Congress Section From Config')
+    elif "keys" not in config["congress"]:
+        raise KeyError('Missing Keys Section From Config["congress"]')
+
+    config = config["congress"]
+    total = len(config["keys"])
+    current = 0
+    while True:
+        yield config["keys"][current]
+        
+        if current >= total-1:
+            current = 0
+        else:
+            current += 1
+
+def signal_handler(sig, frame):
+    # print("\b\b  ", end="\r")  # Note: Hiding Ctrl+C will be difficult without breaking portability
+    print("\nExiting...", end="\n")
+    hide_cursor(hide=False)
+    sys.exit(0)
 
 if __name__ == "__main__":
-	config, s3, api_key = get_config()
-	read_bills()
-	#print("Total Bill Count: %s" % download_count)
+    signal.signal(signal.SIGINT, signal_handler)
+    hide_cursor(hide=True)
+    count_bills()
+    read_bills()
+    hide_cursor(hide=False)
