@@ -36,7 +36,9 @@ skipped: list = [
     "https://www.congress.gov",
     "https://clerk.house.gov",
     "https://www.senate.gov",
-    "https://www.cbo.gov"
+    "https://www.cbo.gov",
+    "https://api.data.gov",
+    "https://api.congress.gov"
 ]
 
 def upload_file(key: str, body: str) -> None:
@@ -93,6 +95,7 @@ def download_file(url: str) -> None:
 
     # TODO: Eventually Add Support For These URLs
     if host in skipped:
+        # print("\033[KSkipping Host: %s" % host, end="\n")
         print("\033[K%s (%s elapsed) - Skipping %s" % (humanize.intcomma(line), elapsed, key), end="\r")
         return
 
