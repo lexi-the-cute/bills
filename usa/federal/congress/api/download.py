@@ -104,7 +104,7 @@ def download_file(url: str) -> None:
         print("\033[K%s (%s elapsed) - Skipping %s" % (humanize.intcomma(line), elapsed, key), end="\r")
         return
 
-    print("\033[K%s (%s elapsed) - Downloading %s" % (humanize.intcomma(line), elapsed, key), end="\r")
+    print("\033[K%s (%s elapsed) - Downloading %s - %s" % (humanize.intcomma(line), elapsed, key, url), end="\r")
     
     url: str = "%s://%s%s" % (parsed.scheme, parsed.netloc, parsed.path)
     params: dict = {
