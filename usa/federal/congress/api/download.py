@@ -1,3 +1,4 @@
+import gc
 import os
 import csv
 import sys
@@ -83,6 +84,10 @@ def download_file(url: str) -> None:
     global line
     global read_bills_start_time
     global session
+
+    # Note: For some reason, Python's not garbage collecting, so I keep getting oom-kill
+    if line % 100000 == 0:
+        gc.collect()
 
     key: str = get_key(url=url)
 
