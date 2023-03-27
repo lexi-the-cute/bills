@@ -179,6 +179,7 @@ def read_bills() -> None:
             os.close(fd)
 
     print(end="\n")
+    print("Finished Downloading Bills...", end="\n")
 
 def count_bills() -> int:
     total: int = 0
