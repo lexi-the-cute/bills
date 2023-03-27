@@ -39,7 +39,7 @@ skipped: list = [
     "https://www.cbo.gov"
 ]
 
-def upload_file(key: str, body: str):
+def upload_file(key: str, body: str) -> None:
     s3: BaseClient = get_s3_client()
     bucket: str = get_default_s3_bucket()
 
@@ -50,7 +50,7 @@ def upload_file(key: str, body: str):
     )
 
 # TODO: Figure out if I should optimize this and how to do it
-def save_local(key: str, body: str):
+def save_local(key: str, body: str) -> None:
     key: str = "local/%s" % key
     path: str = os.path.dirname(key)
     if not os.path.exists(path):
@@ -70,12 +70,11 @@ def get_key(url: str) -> str:
     
     return "usa/federal/congress/%s/data.json" % "/".join(split)
 
-def log_error(url: str, message: str):
+def log_error(url: str, message: str) -> None:
     # TODO: Determine if we need to optimize writing to this file
     with open('errors.csv', 'a') as fi:
         row = csv.writer(fi)
         row.writerow([url, message])
-        return
 
 # TODO: This global breaks reusability, consider making a class
 line: int = 0
@@ -252,7 +251,7 @@ def get_api_key() -> Generator[str, None, None]:
         else:
             current += 1
 
-def signal_handler(sig, frame):
+def signal_handler(sig, frame) -> None:
     # print("\b\b  ", end="\r")  # Note: Hiding Ctrl+C will be difficult without breaking portability
     print("\nExiting...", end="\n")
     hide_cursor(hide=False)
