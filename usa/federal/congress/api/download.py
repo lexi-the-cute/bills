@@ -38,7 +38,7 @@ skipped: list = [
     "https://www.senate.gov",
     "https://www.cbo.gov",
     "https://api.data.gov",
-    "https://api.congress.gov"
+    # "https://api.congress.gov"
 ]
 
 def upload_file(key: str, body: str) -> None:
