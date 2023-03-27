@@ -1,5 +1,3 @@
-# TODO: Determine if there's a memory leak somewhere
-
 import os
 import csv
 import sys
@@ -12,10 +10,8 @@ import signal
 import datetime
 import humanize
 import requests
-import tracemalloc
 
 from typing import Generator
-from memory_profiler import profile
 from botocore.client import BaseClient
 from urllib.parse import urlparse, ParseResult
 
@@ -95,16 +91,6 @@ def download_file(url: str) -> None:
     parsed: ParseResult = urlparse(url)
     host: str = "%s://%s" % (parsed.scheme, parsed.netloc)
 
-    if line % 100000 == 0:
-        # snapshot = tracemalloc.take_snapshot()
-        # top_stats = snapshot.statistics(key_type='lineno', cumulative=False)
-        # for stat in top_stats:
-        #     print(stat)
-        size, peak = tracemalloc.get_traced_memory()
-        tracemalloc.reset_peak()
-
-        print("\033[KSize: %s, Peak: %s, Line: %s" % (humanize.naturalsize(size), humanize.naturalsize(peak), humanize.intcomma(line)), end="\n")
-
     # TODO: Eventually Add Support For These URLs
     if host in skipped:
         print("\033[K%s (%s elapsed) - Skipping %s" % (humanize.intcomma(line), elapsed, key), end="\r")
@@ -177,7 +163,6 @@ def read_bills() -> None:
     global read_bills_start_time
     read_bills_start_time = time.time()
 
-    tracemalloc.start()
     for file in scantree(path='local'):
         try:
             fd: int = os.open(file, os.O_RDONLY)
@@ -187,7 +172,6 @@ def read_bills() -> None:
             parse_json(data=contents)
         finally:
             os.close(fd)
-    tracemalloc.stop()
 
     print(end="\n")
 
@@ -276,6 +260,6 @@ def signal_handler(sig, frame) -> None:
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     hide_cursor(hide=True)
-    # count_bills()
+    count_bills()
     read_bills()
     hide_cursor(hide=False)
