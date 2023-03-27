@@ -14,8 +14,9 @@ import humanize
 import requests
 
 from typing import Generator
-from urllib.parse import urlparse, ParseResult
+from memory_profiler import profile
 from botocore.client import BaseClient
+from urllib.parse import urlparse, ParseResult
 
 # Note: With Generator[yield, send, return], you can send to a yield via "received = yield ..."
 
@@ -81,6 +82,7 @@ def log_error(url: str, message: str) -> None:
 # TODO: This global breaks reusability, consider making a class
 line: int = 0
 session = requests.Session()
+@profile
 def download_file(url: str) -> None:
     global line
     global read_bills_start_time
