@@ -1,3 +1,5 @@
+# TODO: Determine if there's a memory leak somewhere
+
 import os
 import csv
 import sys
