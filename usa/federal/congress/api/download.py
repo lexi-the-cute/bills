@@ -112,13 +112,15 @@ def download_file(url: str) -> None:
     print("\033[K%s (%s elapsed) - Downloading %s - %s" % (humanize.intcomma(line), elapsed, key, url), end="\r")
 
     # TODO: Figure out how to stream file to s3 bucket and to local filesystem
+    # TODO: Consider saving to OS' temporary folder and then moving from there, then uploading to S3
     response = session.get(url=url, params=params)
     content_type = response.headers.get('content-type')
 
     # TODO: Implement Handling Unknown File Types
     if content_type != "application/json":
         print("\033[K%s (%s elapsed) - Skipping Unknown File %s" % (humanize.intcomma(line), elapsed, key), end="\r")
-    
+        return
+
     try:
         results = response.json()
     except:
