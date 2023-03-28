@@ -78,9 +78,30 @@ def log_error(url: str, message: str) -> None:
         row = csv.writer(fi)
         row.writerow([url, message])
 
+def get_api_key() -> Generator[str, None, None]:
+    with open('config.yml', 'r') as fi:
+        config: dict = yaml.safe_load(fi)
+
+    if "congress" not in config:
+        raise KeyError('Missing Congress Section From Config')
+    elif "keys" not in config["congress"]:
+        raise KeyError('Missing Keys Section From Config["congress"]')
+
+    config = config["congress"]
+    total = len(config["keys"])
+    current = 0
+    while True:
+        yield config["keys"][current]
+        
+        if current >= total-1:
+            current = 0
+        else:
+            current += 1
+
 # TODO: This global breaks reusability, consider making a class
 line: int = 0
 session = requests.Session()
+api_key: str = get_api_key()
 def download_file(url: str) -> None:
     global line
     global read_bills_start_time
@@ -105,7 +126,7 @@ def download_file(url: str) -> None:
     
     url: str = "%s://%s%s" % (parsed.scheme, parsed.netloc, parsed.path)
     params: dict = {
-        "api_key": next(get_api_key()),
+        "api_key": next(api_key),
         "format": "json"
     }
 
@@ -236,26 +257,6 @@ def get_default_s3_bucket() -> str:
         raise KeyError('Missing default_bucket Section From Config["s3"]')
 
     return config["s3"]["default_bucket"]
-
-def get_api_key() -> Generator[str, None, None]:
-    with open('config.yml', 'r') as fi:
-        config: dict = yaml.safe_load(fi)
-
-    if "congress" not in config:
-        raise KeyError('Missing Congress Section From Config')
-    elif "keys" not in config["congress"]:
-        raise KeyError('Missing Keys Section From Config["congress"]')
-
-    config = config["congress"]
-    total = len(config["keys"])
-    current = 0
-    while True:
-        yield config["keys"][current]
-        
-        if current >= total-1:
-            current = 0
-        else:
-            current += 1
 
 def signal_handler(sig, frame) -> None:
     # print("\b\b  ", end="\r")  # Note: Hiding Ctrl+C will be difficult without breaking portability
