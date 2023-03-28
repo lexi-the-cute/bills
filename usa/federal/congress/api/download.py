@@ -102,14 +102,14 @@ def download_file(url: str) -> None:
     if os.path.exists("local/%s" % key):
         print("\033[K%s (%s elapsed) - Skipping %s" % (humanize.intcomma(line), elapsed, key), end="\r")
         return
-
-    print("\033[K%s (%s elapsed) - Downloading %s - %s" % (humanize.intcomma(line), elapsed, key, url), end="\r")
     
     url: str = "%s://%s%s" % (parsed.scheme, parsed.netloc, parsed.path)
     params: dict = {
         "api_key": get_api_key(),
         "format": "json"
     }
+
+    print("\033[K%s (%s elapsed) - Downloading %s - %s" % (humanize.intcomma(line), elapsed, key, url), end="\r")
 
     # TODO: Figure out how to stream file to s3 bucket and to local filesystem
     response = session.get(url=url, params=params)
