@@ -33,12 +33,12 @@ rename: dict = {
 }
 
 skipped: list = [
-    "https://www.congress.gov",
-    "https://clerk.house.gov",
-    "https://www.senate.gov",
-    "https://www.cbo.gov",
-    "https://api.data.gov",
-    # "https://api.congress.gov"
+    "www.congress.gov",
+    "clerk.house.gov",
+    "www.senate.gov",
+    "www.cbo.gov",
+    "api.data.gov",
+    # "api.congress.gov"
 ]
 
 def upload_file(key: str, body: str) -> None:
@@ -91,11 +91,10 @@ def download_file(url: str) -> None:
     line += 1
     elapsed: str = humanize.naturaldelta(datetime.timedelta(seconds=(time.time()-read_bills_start_time)))
     parsed: ParseResult = urlparse(url)
-    host: str = "%s://%s" % (parsed.scheme, parsed.netloc)
 
     # TODO: Eventually Add Support For These URLs
-    if host in skipped:
-        # print("\033[KSkipping Host: %s" % host, end="\n")
+    if parsed.netloc in skipped:
+        # print("\033[KSkipping Host: %s" % parsed.netloc, end="\n")
         print("\033[K%s (%s elapsed) - Skipping %s" % (humanize.intcomma(line), elapsed, key), end="\r")
         return
 
