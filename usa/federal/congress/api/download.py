@@ -264,6 +264,6 @@ def signal_handler(sig, frame) -> None:
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     hide_cursor(hide=True)
-    # count_bills()
+    count_bills()
     read_bills()
     hide_cursor(hide=False)
