@@ -105,7 +105,7 @@ def download_file(url: str) -> None:
     
     url: str = "%s://%s%s" % (parsed.scheme, parsed.netloc, parsed.path)
     params: dict = {
-        "api_key": get_api_key(),
+        "api_key": next(get_api_key()),
         "format": "json"
     }
 
@@ -264,6 +264,6 @@ def signal_handler(sig, frame) -> None:
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     hide_cursor(hide=True)
-    count_bills()
+    # count_bills()
     read_bills()
     hide_cursor(hide=False)
