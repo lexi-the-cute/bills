@@ -100,17 +100,17 @@ def get_api_key() -> Generator[str, None, None]:
 
 # TODO: This global breaks reusability, consider making a class
 line: int = 0
-session = requests.Session()
-api_key: str = get_api_key()
+session: requests.Session = requests.Session()
+api_key: Generator[str, None, None] = get_api_key()
 def download_file(url: str) -> None:
     global line
-    global read_bills_start_time
+    global start_time
     global session
 
     key: str = get_key(url=url)
 
     line += 1
-    elapsed: str = humanize.naturaldelta(datetime.timedelta(seconds=(time.time()-read_bills_start_time)))
+    elapsed: str = humanize.naturaldelta(datetime.timedelta(seconds=(time.time()-start_time)))
     parsed: ParseResult = urlparse(url)
 
     # TODO: Eventually Add Support For These URLs
@@ -184,10 +184,10 @@ def scantree(path: str = "local") -> Generator[str, None, None]:
             yield os.path.join(path, entry.name)
 
 # TODO: This global breaks reusability, consider making a class
-read_bills_start_time: int = -1
+start_time: int = -1
 def read_bills() -> None:
-    global read_bills_start_time
-    read_bills_start_time = time.time()
+    global start_time
+    start_time = time.time()
 
     for file in scantree(path='local'):
         try:
@@ -264,9 +264,57 @@ def signal_handler(sig, frame) -> None:
     hide_cursor(hide=False)
     sys.exit(0)
 
+def live_download():
+    global start_time
+    start_time = time.time()
+
+    endpoints: list = [
+        "https://api.congress.gov/v3/congress",  # 118
+        "https://api.congress.gov/v3/summaries",  # 375
+        "https://api.congress.gov/v3/committee",  # 714
+        "https://api.congress.gov/v3/treaty",  # 782
+        "https://api.congress.gov/v3/member",  # 2,515
+        "https://api.congress.gov/v3/house-requirement",  # 3,226
+        # "https://api.congress.gov/v3/congressional-record",  # 5,148 - Uses A Different Pagination System
+        "https://api.congress.gov/v3/house-communication",  # 30,487
+        "https://api.congress.gov/v3/nomination",  # 41,448
+        "https://api.congress.gov/v3/committee-report",  # 47,464
+        "https://api.congress.gov/v3/amendment",  # 117,324
+        "https://api.congress.gov/v3/senate-communication",  # 164,335
+        "https://api.congress.gov/v3/bill"  # 394,438
+    ]
+
+    api_key: Generator[str, None, None] = get_api_key()
+    session: requests.Session = requests.Session()
+    for endpoint in endpoints:
+        params: dict = {
+            "api_key": next(api_key),
+            "offset": 0,
+            "limit": 250,
+            "format": "json"
+        }
+
+        response: requests.Response = session.get(url=endpoint, params=params)
+
+        # TODO: Determine if should put other checks...
+
+        results: dict = response.json()
+        total: int = results["pagination"]["count"]
+        results.pop("pagination")  # Don't Get Stuck In Loop
+
+        while (total-params["offset"])>0:
+            params["offset"] = params["offset"]+250
+
+            response: requests.Response = session.get(url=endpoint, params=params)
+            for (_, value) in dpath.search(results, '**/url', yielded=True):
+                # print("%s: %s" % (path, value))
+                download_file(url=value)
+
+
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     hide_cursor(hide=True)
+    live_download()
     count_bills()
     read_bills()
     hide_cursor(hide=False)
