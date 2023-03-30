@@ -25,11 +25,11 @@ rename: dict = {
     "treaty": "treaties",
     "committee": "committees",
     "nomination": "nominations",
-    # "summary": "summaries",
-    # "house-communication": "house-communications",
-    # "senate-communication": "senate-communications",
-    # "congressional-record": "congressional-records",
-    # "house-requirement": "house-requirements"
+    "house-communication": "house-communications",
+    "senate-communication": "senate-communications",
+    "house-requirement": "house-requirements",
+    "crec": "congressional-records",
+    # "summary": "summaries"
 }
 
 skipped: list = [
