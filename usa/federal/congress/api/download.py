@@ -299,15 +299,26 @@ def live_download():
         # TODO: Determine if should put other checks...
 
         results: dict = response.json()
-        total: int = results["pagination"]["count"]
-        results.pop("pagination")  # Don't Get Stuck In Loop
+
+        # Check in case we get an error message
+        if "pagination" in results:
+            total: int = results["pagination"]["count"]
+            results.pop("pagination")  # Don't Get Stuck In Loop
 
         while (total-params["offset"])>0:
             params["offset"] = params["offset"]+250
 
             response: requests.Response = session.get(url=endpoint, params=params)
+            results: dict = response.json()
+
+            # Check in case we get an error message
+            if "pagination" in results:
+                total: int = results["pagination"]["count"]
+                results.pop("pagination")  # Don't Get Stuck In Loop
+
             for (_, value) in dpath.search(results, '**/url', yielded=True):
                 # print("%s: %s" % (path, value))
+                # print("\033[K%s - %s" % (value, response.url))
                 download_file(url=value)
 
 
