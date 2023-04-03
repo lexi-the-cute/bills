@@ -1,5 +1,5 @@
+import os
 import yaml
-import time
 import json
 import flask
 
@@ -20,7 +20,7 @@ headers: dict = {
 }
 
 def load_config():
-	with open('config.yml', 'r') as fi:
+	with open(os.path.join("data", "config.yml"), 'r') as fi:
 		return yaml.safe_load(fi)
 
 def get_config():

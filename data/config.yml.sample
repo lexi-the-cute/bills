@@ -4,7 +4,6 @@ s3:
     secret_access_key: "YOUR_SECRET_ACCESS_KEY"
     default_bucket: "bills"
     endpoint: "https://s3.wasabisys.com"
-    region: "us-east-1"
 congress:
     # https://api.congress.gov/sign-up/
     # 6 Keys Works Fine Without Stopping
@@ -12,15 +11,10 @@ congress:
         - "YOUR_FIRST_API_KEY"
         - "YOUR_SECOND_API_KEY"
         - "YOUR_THIRD_API_KEY"
-mysql:
-    hostname: "localhost"
-    username: "root"
-    password: ""
-    database: "congress"
 activitypub:
+    # TODO: Cleanup Config, Consider Transferring Most Keys To Database
     hostname: "localhost"
     server_port: 8080
-    account_name: "demo"
     web_hostname: "localhost"
     web_domain: "http://localhost"
     certificate_path: "/etc/letsencrypt/live/.../fullchain.pem"
@@ -28,6 +22,6 @@ activitypub:
     is_cat: true
     activitypub_public_key: "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
     activitypub_private_key: "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
-    logo: "../images/logo.png"
-    header: "../images/header.png"
-    emoji: "../images/bill-emoji.png"
+    logo: "../../data/images/logo.png"
+    header: "../../data/images/header.png"
+    emoji: "../../data/images/bill-emoji.png"

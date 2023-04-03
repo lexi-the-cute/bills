@@ -1,8 +1,5 @@
 .venv
-venv
-config.yml
-local/
-bulk/
-local.zip
-local.tar.gz
-errors.csv
+
+data/*
+!data/images/
+!data/config.yml.sample

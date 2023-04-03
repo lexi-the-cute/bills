@@ -53,7 +53,7 @@ def upload_file(key: str, body: str) -> None:
 
 # TODO: Figure out if I should optimize this and how to do it
 def save_local(key: str, body: str) -> None:
-    key: str = "local/%s" % key
+    key: str = os.path.join("data", "local", key)
     path: str = os.path.dirname(key)
     if not os.path.exists(path):
         os.makedirs(path)
@@ -74,12 +74,12 @@ def get_key(url: str) -> str:
 
 def log_error(url: str, message: str) -> None:
     # TODO: Determine if we need to optimize writing to this file
-    with open('errors.csv', 'a') as fi:
+    with open(os.path.join("data", "errors.csv"), 'a') as fi:
         row = csv.writer(fi)
         row.writerow([url, message])
 
 def get_api_key() -> Generator[str, None, None]:
-    with open('config.yml', 'r') as fi:
+    with open(os.path.join("data", "config.yml"), 'r') as fi:
         config: dict = yaml.safe_load(fi)
 
     if "congress" not in config:
@@ -120,7 +120,7 @@ def download_file(url: str) -> None:
         return
 
     # Skip Download If Already Exists
-    if os.path.exists("local/%s" % key):
+    if os.path.exists(os.path.join("data", "local", key)):
         print("\033[K%s (%s elapsed) - Skipping %s" % (humanize.intcomma(line), elapsed, key), end="\r")
         return
     
@@ -130,7 +130,7 @@ def download_file(url: str) -> None:
         "format": "json"
     }
 
-    print("\033[K%s (%s elapsed) - Downloading %s - %s" % (humanize.intcomma(line), elapsed, key, url), end="\r")
+    print("\033[K%s (%s elapsed) - Downloading %s" % (humanize.intcomma(line), elapsed, key), end="\r")
 
     # TODO: Figure out how to stream file to s3 bucket and to local filesystem
     # TODO: Consider saving to OS' temporary folder and then moving from there, then uploading to S3
@@ -176,7 +176,7 @@ def parse_json(data: dict) -> None:
         # print("%s: %s" % (path, value))
         download_file(url=value)
 
-def scantree(path: str = "local") -> Generator[str, None, None]:
+def scantree(path: str = os.path.join("data", "local")) -> Generator[str, None, None]:
     for entry in os.scandir(path=path):
         if entry.is_dir():
             yield from scantree(path=os.path.join(path, entry.name))
@@ -189,7 +189,10 @@ def read_bills() -> None:
     global start_time
     start_time = time.time()
 
-    for file in scantree(path='local'):
+    if not os.path.exists(os.path.join("data", "local")):
+        os.makedirs(os.path.join("data", "local"))
+
+    for file in scantree(path=os.path.join("data", "local")):
         try:
             fd: int = os.open(file, os.O_RDONLY)
             data: bytes = os.read(fd, os.fstat(fd).st_size)
@@ -205,7 +208,12 @@ def read_bills() -> None:
 def count_bills() -> int:
     total: int = 0
     start: int = time.time()
-    for _ in scantree(path='local'):
+    elapsed: str = humanize.naturaldelta(0)
+
+    if not os.path.exists(os.path.join("data", "local")):
+        os.makedirs(os.path.join("data", "local"))
+
+    for _ in scantree(path=os.path.join("data", "local")):
         total += 1
 
         if total % 1000 == 0:
@@ -224,7 +232,7 @@ def hide_cursor(hide: bool) -> None:
         print("\033[?25h", end="\r")
 
 def get_s3_client() -> BaseClient:
-    with open('config.yml', 'r') as fi:
+    with open(os.path.join("data", "config.yml"), 'r') as fi:
         config: dict = yaml.safe_load(fi)
 
     if "s3" not in config:
@@ -248,7 +256,7 @@ def get_s3_client() -> BaseClient:
     return s3
 
 def get_default_s3_bucket() -> str:
-    with open('config.yml', 'r') as fi:
+    with open(os.path.join("data", "config.yml"), 'r') as fi:
         config: dict = yaml.safe_load(fi)
 
     if "s3" not in config:
@@ -325,7 +333,7 @@ def live_download():
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     hide_cursor(hide=True)
-    live_download()
-    count_bills()
+    # live_download()
+    # count_bills()
     read_bills()
     hide_cursor(hide=False)
