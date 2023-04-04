@@ -1,3 +1,4 @@
+# TODO: Add Ability To Edit Files In Place
 # https://github.com/asciinema/asciinema/blob/develop/doc/asciicast-v2.md
 # The extension should be .cast and the mime type should be application/x-asciicast
 
@@ -410,30 +411,65 @@ class Event:
 
 
 class Recording:
+    file_pointer: Union[TextIOWrapper, StringIO]
     file: Union[str, bytes, os.PathLike, TextIOWrapper, StringIO]
     header: Optional[Format] = None
 
     def __init__(self, file: Union[str, bytes, os.PathLike, TextIOWrapper, StringIO], header: Optional[Format] = None) -> None:
         self.file = file
+        self.open_file()
 
         if header is None:
             self.read_header()
+
+    def open_file(self):
+        if type(self.file) is TextIOWrapper:
+            self.file_pointer = self.file
+        elif type(self.file) is StringIO:
+            self.file_pointer = self.file
+        elif type(self.file) is str or bytes or os.PathLike:
+            self.file_pointer = open(file=self.file, mode="a+")
+
+    def has_header(self) -> bool:
+        self.file_pointer.seek(0, os.SEEK_SET)
+        line: str = self.file_pointer.readline()
+
+        try:
+            header: Format = Format(header=json.loads(line))
+
+            # Should this check for more than just the version?
+            if header.version is None:
+                return False
+            elif header.width is None:
+                return False
+            elif header.height is None:
+                return False
+        except:
+            return False
+
+        return True
+
+    def write_header(self) -> None:
+        """
+            Write Header To File From Format Class
+        """
+        if self.has_header():
+            # TODO: Edit First Line In Place
+            pass
+
+        self.file_pointer.seek(0, os.SEEK_SET)
+        self.file_pointer.write("%s\n" % json.dumps(self.header.get_header()))
 
     def read_header(self) -> Optional[Format]:
         """
             Read Header From File To Format Class
         """
-        file: Union[TextIOWrapper, StringIO]
-        if type(self.file) is TextIOWrapper:
-            file: TextIOWrapper = self.file
-            file.seek(os.SEEK_SET)
-        elif type(self.file) is StringIO:
-            file: StringIO = self.file
-            file.seek(os.SEEK_SET)
-        elif type(self.file) is str or bytes or os.PathLike:
-            file: TextIOWrapper = open(file=self.file, mode="r")
+        if not self.has_header():
+            self.header = None
 
-        line: str = file.readline()
+        self.file_pointer.seek(0, os.SEEK_SET)
+
+        line: str = self.file_pointer.readline()
         try:
             self.header = Format(header=json.loads(line))
             return self.get_header()
@@ -456,25 +492,25 @@ class Recording:
         """
             Read Rows
         """
-        file: Union[TextIOWrapper, StringIO]
-        if type(self.file) is TextIOWrapper:
-            file: TextIOWrapper = self.file
-            file.seek(os.SEEK_SET)
-        elif type(self.file) is StringIO:
-            file: StringIO = self.file
-            file.seek(os.SEEK_SET)
-        elif type(self.file) is str or bytes or os.PathLike:
-            file: TextIOWrapper = open(file=self.file, mode="r")
+        self.file_pointer.seek(0, os.SEEK_SET)
         
         # TODO: Determine If Should Check For Dict (Header), Vs List (Row) Instead
         skip_line: bool = True
-        for line in file.readlines():
+        for line in self.file_pointer.readlines():
             # Skip Header Line
             if skip_line:
                 skip_line: bool = False
                 continue
 
             yield Event(event=json.loads(line))
+
+    def write(self, event: Event, write_as_dict: bool = False):
+        self.file_pointer.seek(0, os.SEEK_END)
+
+        if write_as_dict:
+            self.file_pointer.write("%s\n" % json.dumps(event.get_event_as_dict()))
+        else:
+            self.file_pointer.write("%s\n" % json.dumps(event.get_event()))
 
     def __repr__(self) -> str:
         """
@@ -492,16 +528,32 @@ class Recording:
 
 if __name__ == "__main__":
     beep: StringIO = StringIO()
-    beep.writelines([
-        '{"version":2,"width":14,"height":1,"title":"Beep"}\n',
-        '[1, "o", "Hello World!\\u0007\\n"]'  # This also works `{"offset":1,"type":2,"data":"Hello World!\\u0007\\n"}``
-        ])
+    # beep.writelines([
+    #     '{"version":2,"width":14,"height":1,"title":"Beep"}\n',
+    #     '[1, "o", "Hello World!\\u0007\\n"]'  # This also works `{"offset":1,"type":2,"data":"Hello World!\\u0007\\n"}`
+    #     ])
 
     rec: Recording = Recording(file=beep)
+    # rec: Recording = Recording(file="/home/alexis/Desktop/write.cast")
     # rec: Recording = Recording(file="/home/alexis/Downloads/beep.cast")
     # rec: Recording = Recording(file="/home/alexis/Downloads/train.cast")
     # rec: Recording = Recording(file="/home/alexis/Desktop/download.cast")
-    
+
+    header: Format = Format()
+    header.set_version(2)
+    header.set_width(14)
+    header.set_height(1)
+    header.set_title("Hello")
+
+    rec.set_header(header=header)
+    rec.write_header()
+
+    event: Event = Event()
+    event.set_offset(1)
+    event.set_type("o")
+    event.set_data("Hello World!\u0007\n")
+    rec.write(event=event)
+
     for event in rec.read():
         offset: float = event.offset
         event_type: str = event.type
