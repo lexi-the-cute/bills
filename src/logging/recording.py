@@ -494,7 +494,7 @@ if __name__ == "__main__":
     beep: StringIO = StringIO()
     beep.writelines([
         '{"version":2,"width":14,"height":1,"title":"Beep"}\n',
-        '[1, "o", "Hello World!\\u0007\\n"]'
+        '[1, "o", "Hello World!\\u0007\\n"]'  # This also works `{"offset":1,"type":2,"data":"Hello World!\\u0007\\n"}``
         ])
 
     rec: Recording = Recording(file=beep)
