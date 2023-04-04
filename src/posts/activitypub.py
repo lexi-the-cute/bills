@@ -22,7 +22,7 @@ headers: dict = {
 }
 
 def load_config():
-	with open(os.path.join("data", "config.yml"), 'r') as fi:
+	with open(file=os.path.join("data", "config.yml"), mode='r') as fi:
 		return yaml.safe_load(fi)
 
 def get_config():
