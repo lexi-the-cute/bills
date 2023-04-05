@@ -13,9 +13,9 @@ from typing import Generator, Union, Optional, Any
 
 
 class Theme:
-    foreground: str  # Normal Text Color
-    background: str  # Normal Background Color
-    palette: str  # List of 8 or 16 Colors, Separated By Colons (In CSS Hex Codes #rrggbb)
+    foreground: Optional[str]  # Normal Text Color
+    background: Optional[str]  # Normal Background Color
+    palette: Optional[str]  # List of 8 or 16 Colors, Separated By Colons (In CSS Hex Codes #rrggbb)
 
     def __init__(self, theme: Optional[dict] = None) -> None:
         if theme is not None:
@@ -57,19 +57,19 @@ class Theme:
         """
         self.palette = palette
 
-    def get_foreground(self) -> str:
+    def get_foreground(self) -> Optional[str]:
         """
             Normal Text Color
         """
         return self.foreground
 
-    def get_background(self) -> str:
+    def get_background(self) -> Optional[str]:
         """
             Normal Background Color
         """
         return self.background
 
-    def get_pallete(self) -> str:
+    def get_pallete(self) -> Optional[str]:
         """
             List of 8 or 16 Colors, Separated By Colons (In CSS Hex Codes #rrggbb)
         """
@@ -91,9 +91,9 @@ class Theme:
 
 
 class Format:
-    version: int  # At time of writing, latest version is 2 (required)
-    width: int  # Number of columns (required)
-    height: int  # Number of rows (required)
+    version: Optional[int]  # At time of writing, latest version is 2 (required)
+    width: Optional[int]  # Number of columns (required)
+    height: Optional[int]  # Number of rows (required)
     timestamp: Optional[int] = None  # Start of Recording As Unix Timestamp
     duration: Optional[float] = None  # Duration of Recording When Known Up Front
     idle_time_limit: Optional[float] = None  # Maximum allowed period between frames when played back
@@ -146,30 +146,30 @@ class Format:
             header["timestamp"] = self.timestamp
 
         if self.duration is not None:
-            header["duration"] = self.duration
+            header["duration"] = self.duration # type: ignore
 
         if self.idle_time_limit is not None:
-            header["idle_time_limit"] = self.idle_time_limit
+            header["idle_time_limit"] = self.idle_time_limit # type: ignore
 
         if self.command is not None:
-            header["command"] = self.command
+            header["command"] = self.command # type: ignore
 
         if self.title is not None:
-            header["title"] = self.title
+            header["title"] = self.title # type: ignore
 
         if self.env is not None:
-            header["env"] = self.env
+            header["env"] = self.env # type: ignore
 
         if self.theme is not None:
-            header["theme"] = self.theme
+            header["theme"] = self.theme # type: ignore
 
         # V1 Only Contents
         if self.stdout is not None:
-            header["stdout"] = self.stdout
+            header["stdout"] = self.stdout # type: ignore
 
         return header
 
-    def get_version(self) -> int:
+    def get_version(self) -> Optional[int]:
         """
             At time of writing, latest version is 2
 
@@ -178,13 +178,13 @@ class Format:
         """
         return self.version
     
-    def get_width(self) -> int:
+    def get_width(self) -> Optional[int]:
         """
             Number of Columns
         """
         return self.width
     
-    def get_height(self) -> int:
+    def get_height(self) -> Optional[int]:
         """
             Number of Rows
         """
@@ -323,8 +323,8 @@ class Format:
 
 
 class Event:
-    offset: float  # Number of seconds since beginning of recording
-    type: str  # Current either o (for stdout) or i (for stdin) as of time of writing
+    offset: Optional[float]  # Number of seconds since beginning of recording
+    type: Optional[str]  # Current either o (for stdout) or i (for stdin) as of time of writing
     data: Any  # Can be anything JSON compatible, but for Asciinema i and o, must be UTF-8 string
 
     def __init__(self, event: Optional[Union[list, dict]] = None) -> None:
@@ -355,13 +355,13 @@ class Event:
             "data": self.data
         }
 
-    def get_offset(self) -> float:
+    def get_offset(self) -> Optional[float]:
         """
             Number of seconds since beginning of recording
         """
         return self.offset
     
-    def get_type(self) -> str:
+    def get_type(self) -> Optional[str]:
         """
             Type of Event
 
@@ -422,13 +422,13 @@ class Recording:
         if header is None:
             self.read_header()
 
-    def open_file(self):
+    def open_file(self) -> None:
         if type(self.file) is TextIOWrapper:
             self.file_pointer = self.file
         elif type(self.file) is StringIO:
             self.file_pointer = self.file
         elif type(self.file) is str or bytes or os.PathLike:
-            self.file_pointer = open(file=self.file, mode="a+")
+            self.file_pointer = open(file=self.file, mode="a+") # type: ignore
 
     def has_header(self) -> bool:
         self.file_pointer.seek(0, os.SEEK_SET)
@@ -457,6 +457,9 @@ class Recording:
             # TODO: Edit First Line In Place
             pass
 
+        if self.header is None:
+            return
+
         self.file_pointer.seek(0, os.SEEK_SET)
         self.file_pointer.write("%s\n" % json.dumps(self.header.get_header()))
 
@@ -482,7 +485,7 @@ class Recording:
         """
         self.header = header
 
-    def get_header(self) -> Format:
+    def get_header(self) -> Optional[Format]:
         """
             Retrieve Header
         """
@@ -504,7 +507,7 @@ class Recording:
 
             yield Event(event=json.loads(line))
 
-    def write(self, event: Event, write_as_dict: bool = False):
+    def write(self, event: Event, write_as_dict: bool = False) -> None:
         self.file_pointer.seek(0, os.SEEK_END)
 
         if write_as_dict:
@@ -555,7 +558,7 @@ if __name__ == "__main__":
     rec.write(event=event)
 
     for event in rec.read():
-        offset: float = event.offset
-        event_type: str = event.type
+        offset: Optional[float] = event.offset
+        event_type: Optional[str] = event.type
         data: Any = event.data
         print(data, end="")

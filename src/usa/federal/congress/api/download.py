@@ -11,9 +11,11 @@ import datetime
 import humanize
 import requests
 
-from typing import Generator
-from botocore.client import BaseClient
+from io import TextIOWrapper
+from requests import Response
+from typing import Generator, Optional
 from urllib.parse import urlparse, ParseResult
+
 
 # Note: With Generator[yield, send, return], you can send to a yield via "received = yield ..."
 
@@ -42,7 +44,7 @@ skipped: list = [
 ]
 
 def upload_file(key: str, body: str) -> None:
-    s3: BaseClient = get_s3_client()
+    s3 = get_s3_client()
     bucket: str = get_default_s3_bucket()
 
     s3.put_object(
@@ -52,19 +54,19 @@ def upload_file(key: str, body: str) -> None:
     )
 
 # TODO: Figure out if I should optimize this and how to do it
-def save_local(key: str, body: str) -> None:
+def save_local(key: str, body: str) -> None: # type: ignore
     key: str = os.path.join("data", "local", key)
     path: str = os.path.dirname(key)
     if not os.path.exists(path):
         os.makedirs(path)
     
-    file = open(key, 'w')
+    file: TextIOWrapper = open(key, 'w')
     file.write(body)
     file.close()
 
 def get_key(url: str) -> str:
     path: str = urlparse(url).path
-    split = path.split("/")[2:]
+    split: list[str] = path.split("/")[2:]
     
     # Rename Folder To Our Format
     if split[0] in rename:
@@ -88,7 +90,7 @@ def get_api_key() -> Generator[str, None, None]:
         raise KeyError('Missing Keys Section From Config["congress"]')
 
     config = config["congress"]
-    total = len(config["keys"])
+    total: int = len(config["keys"])
     current = 0
     while True:
         yield config["keys"][current]
@@ -102,7 +104,7 @@ def get_api_key() -> Generator[str, None, None]:
 line: int = 0
 session: requests.Session = requests.Session()
 api_key: Generator[str, None, None] = get_api_key()
-def download_file(url: str) -> None:
+def download_file(url: str) -> None: # type: ignore
     global line
     global start_time
     global session
@@ -134,8 +136,8 @@ def download_file(url: str) -> None:
 
     # TODO: Figure out how to stream file to s3 bucket and to local filesystem
     # TODO: Consider saving to OS' temporary folder and then moving from there, then uploading to S3
-    response = session.get(url=url, params=params)
-    content_type = response.headers.get('content-type')
+    response: Response = session.get(url=url, params=params)
+    content_type: Optional[str] = response.headers.get('content-type')
 
     # TODO: Implement Handling Unknown File Types
     if content_type != "application/json":
@@ -143,32 +145,32 @@ def download_file(url: str) -> None:
         return
 
     try:
-        results = response.json()
+        results: dict = response.json()
+
+        if response.status_code != 200:
+            error = results["error"]
+
+            if "message" in error:
+                print("\033[K%s (%s elapsed) - Waiting 60 Minutes To Try Again (%s): %s" % (humanize.intcomma(line), elapsed, url, response.text), end="\r")
+                time.sleep(60*60)
+                download_file(url=url)
+            elif "matches the given query" in error:
+                print("\033[K%s (%s elapsed) - DJango Error (%s): %s" % (humanize.intcomma(line), elapsed, url, error), end="\r")
+                log_error(url=url, message=error)
+            else:
+                print("\033[K%s (%s elapsed) - Unknown Error (%s): %s" % (humanize.intcomma(line), elapsed, url, response.text), end="\r")
+                log_error(url=url, message=error)
+            
+            return
+        
+        print("\033[K%s (%s elapsed) - Uploading %s" % (humanize.intcomma(line), elapsed, key), end="\r")
+
+        text: str = json.dumps(results)
+        save_local(key=key, body=text)
+        upload_file(key=key, body=text)
     except:
         print("\033[K%s (%s elapsed) - Read JSON Error: %s" % (humanize.intcomma(line), elapsed, response.text), end="\r")
         log_error(url=url, message=response.text)
-        
-    if response.status_code != 200:
-        error = results["error"]
-
-        if "message" in error:
-            print("\033[K%s (%s elapsed) - Waiting 60 Minutes To Try Again (%s): %s" % (humanize.intcomma(line), elapsed, url, response.text), end="\r")
-            time.sleep(60*60)
-            download_file(url=url)
-        elif "matches the given query" in error:
-            print("\033[K%s (%s elapsed) - DJango Error (%s): %s" % (humanize.intcomma(line), elapsed, url, error), end="\r")
-            log_error(url=url, message=error)
-        else:
-            print("\033[K%s (%s elapsed) - Unknown Error (%s): %s" % (humanize.intcomma(line), elapsed, url, response.text), end="\r")
-            log_error(url=url, message=error)
-        
-        return
-    
-    print("\033[K%s (%s elapsed) - Uploading %s" % (humanize.intcomma(line), elapsed, key), end="\r")
-
-    text: str = json.dumps(results)
-    save_local(key=key, body=text)
-    upload_file(key=key, body=text)
 
 
 def parse_json(data: dict) -> None:
@@ -184,30 +186,28 @@ def scantree(path: str = os.path.join("data", "local")) -> Generator[str, None, 
             yield os.path.join(path, entry.name)
 
 # TODO: This global breaks reusability, consider making a class
-start_time: int = -1
+start_time: float = -1
 def read_bills() -> None:
     global start_time
-    start_time = time.time()
+    start_time: float = time.time()
 
     if not os.path.exists(os.path.join("data", "local")):
         os.makedirs(os.path.join("data", "local"))
 
     for file in scantree(path=os.path.join("data", "local")):
-        try:
-            fd: int = os.open(file, os.O_RDONLY)
-            data: bytes = os.read(fd, os.fstat(fd).st_size)
-            contents: dict = json.loads(data)
+        fd: int = os.open(file, os.O_RDONLY)
+        data: bytes = os.read(fd, os.fstat(fd).st_size)
+        contents: dict = json.loads(data)
 
-            parse_json(data=contents)
-        finally:
-            os.close(fd)
+        parse_json(data=contents)
+        os.close(fd)
 
     print(end="\n")
     print("Finished Downloading Bills...", end="\n")
 
 def count_bills() -> int:
     total: int = 0
-    start: int = time.time()
+    start: float = time.time()
     elapsed: str = humanize.naturaldelta(0)
 
     if not os.path.exists(os.path.join("data", "local")):
@@ -217,7 +217,7 @@ def count_bills() -> int:
         total += 1
 
         if total % 1000 == 0:
-            current: int = time.time()
+            current: float = time.time()
             elapsed: str = humanize.naturaldelta(datetime.timedelta(seconds=(current-start)))
             print("\033[KFiles: %s\tElapsed: %s" % (humanize.intcomma(total), elapsed), end="\r")
     
@@ -231,7 +231,7 @@ def hide_cursor(hide: bool) -> None:
     else:
         print("\033[?25h", end="\r")
 
-def get_s3_client() -> BaseClient:
+def get_s3_client():
     with open(os.path.join("data", "config.yml"), 'r') as fi:
         config: dict = yaml.safe_load(fi)
 
@@ -246,7 +246,7 @@ def get_s3_client() -> BaseClient:
 
     # TODO: Determine if there's a type that can allow autocompletion of methods such as s3.put_object(...)
     config = config["s3"]
-    s3: BaseClient = boto3.client(
+    s3 = boto3.client(
         service_name='s3',
         aws_access_key_id=config['access_key_id'],
         aws_secret_access_key=config['secret_access_key'],
@@ -272,7 +272,7 @@ def signal_handler(sig, frame) -> None:
     hide_cursor(hide=False)
     sys.exit(0)
 
-def live_download():
+def live_download() -> None:
     global start_time
     start_time = time.time()
 
@@ -309,12 +309,19 @@ def live_download():
         results: dict = response.json()
 
         # Check in case we get an error message
+        total: int = 0  # TODO: Count Array of Items (Variable Name)
         if "pagination" in results:
             total: int = results["pagination"]["count"]
             results.pop("pagination")  # Don't Get Stuck In Loop
 
+        if "offset" not in params or type(params["offset"]) != int:
+            return
+
         while (total-params["offset"])>0:
-            params["offset"] = params["offset"]+250
+            if "offset" not in params or type(params["offset"]) != int:
+                return
+
+            params["offset"] = params["offset"]+250 # type: ignore
 
             response: requests.Response = session.get(url=endpoint, params=params)
             results: dict = response.json()

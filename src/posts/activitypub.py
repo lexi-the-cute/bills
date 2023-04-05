@@ -5,15 +5,17 @@ import yaml
 import json
 import flask
 
+from typing import Union
+from flask import Response
 from waitress import serve
-from urllib.parse import urlparse
+
 
 hostName = "localhost"
 serverPort = 8080
 
 account_name = "demo"
 web_hostname = "example.com"
-web_domain = "http://%s" % web_hostname
+web_domain: str = "http://%s" % web_hostname
 
 app = flask.Flask(__name__)
 
@@ -31,7 +33,7 @@ def get_config():
 	
 	return config, activitypub
 
-def has_matching_mime_type(accepted: str):
+def has_matching_mime_type(accepted: str) -> bool:
 	if accepted is None:
 		return False
 	
@@ -44,13 +46,10 @@ def has_matching_mime_type(accepted: str):
 	return False
 
 @app.route("/users/<short_id>")
-def path_actor(short_id: str):
+def path_actor(short_id: str) -> Response:
 	global ap
 	
-	# For Debugging
-	disable_redirect: bool = False
-	
-	accepted: str = flask.request.headers.get('Accept')
+	accepted: Union[str, None] = flask.request.headers.get('Accept')
 	
 	actor: dict = {
 		"@context": [
@@ -120,7 +119,7 @@ def path_actor(short_id: str):
 		]
 	}
 	
-	if has_matching_mime_type(accepted):
+	if accepted is not None and has_matching_mime_type(accepted):
 		resp = flask.Response(json.dumps(actor))
 		resp.headers['Content-Type'] = 'application/activity+json; charset=utf-8'
 	else:
@@ -130,10 +129,10 @@ def path_actor(short_id: str):
 	return resp
 
 @app.route("/.well-known/webfinger")
-def path_webfinger():
+def path_webfinger() -> Response:
 	global ap
 	
-	resource: str = flask.request.args.get('resource', None, type=str)
+	resource: Union[str, None] = flask.request.args.get('resource', None, type=str)
 	
 	# Missing Resource
 	if resource is None or resource == "":
@@ -145,10 +144,10 @@ def path_webfinger():
 		resp = flask.Response("", 400)
 		return resp
 	
-	split = resource.split(":")[1]
-	split = split.split("@")
-	domain = split[1]
-	username = split[0]
+	handle: str = resource.split(":")[1]
+	split: list[str] = handle.split("@")
+	domain: str = split[1]
+	username: str = split[0]
 	
 	# Verify At Least 2 Sections
 	if len(split) != 2:
@@ -172,7 +171,7 @@ def path_webfinger():
 	return resp
 
 @app.route("/inbox")
-def path_globa_inbox(short_id: str):
+def path_globa_inbox(short_id: str) -> Response:
 	global ap
 	
 	resp = flask.Response(json.dumps({}))
@@ -181,7 +180,7 @@ def path_globa_inbox(short_id: str):
 	return resp
 
 @app.route("/users/<short_id>/inbox")
-def path_inbox(short_id: str):
+def path_inbox(short_id: str) -> Response:
 	global ap
 	
 	resp = flask.Response(json.dumps({}))
@@ -190,7 +189,7 @@ def path_inbox(short_id: str):
 	return resp
 
 @app.route("/users/<short_id>/posts/<post_id>")
-def path_post(short_id: str, post_id: str):
+def path_post(short_id: str, post_id: str) -> Response:
 	global ap
 	
 	message: dict = {
@@ -243,7 +242,7 @@ def path_post(short_id: str, post_id: str):
 
 # TODO: Determine if this is important
 #@app.route("/users/<short_id>/posts/<post_id>/activity")
-def path_post_activity(short_id: str, post_id: str):
+def path_post_activity(short_id: str, post_id: str) -> Response:
 	global ap
 	
 	message: dict = {
@@ -307,7 +306,7 @@ def path_post_activity(short_id: str, post_id: str):
 	return resp
 	
 @app.route("/users/<short_id>/outbox")
-def path_outbox(short_id: str):
+def path_outbox(short_id: str) -> Response:
 	global ap
 	
 	message: dict = {
@@ -371,7 +370,7 @@ def path_outbox(short_id: str):
 	return resp
 
 @app.route("/users/<short_id>/following")
-def path_following(short_id: str):
+def path_following(short_id: str) -> Response:
 	global ap
 	
 	resp = flask.Response(json.dumps({}))
@@ -380,7 +379,7 @@ def path_following(short_id: str):
 	return resp
 
 @app.route("/users/<short_id>/followers")
-def path_followers(short_id: str):
+def path_followers(short_id: str) -> Response:
 	global ap
 	
 	resp = flask.Response(json.dumps({}))
@@ -389,7 +388,7 @@ def path_followers(short_id: str):
 	return resp
 
 @app.route("/users/<short_id>/liked")
-def path_liked(short_id: str):
+def path_liked(short_id: str) -> Response:
 	global ap
 	
 	resp = flask.Response(json.dumps({}))
@@ -398,7 +397,7 @@ def path_liked(short_id: str):
 	return resp
 
 @app.route("/@<short_id>")
-def path_actor_html(short_id: str):
+def path_actor_html(short_id: str) -> Response:
 	html: str = """
 		<!DOCTYPE html>
 		<html>
@@ -420,9 +419,9 @@ def path_actor_html(short_id: str):
 	return resp
 
 @app.route("/@<short_id>/<post_id>")
-def path_post_html(short_id: str, post_id: str):
-	accepted: str = flask.request.headers.get('Accept')
-	if has_matching_mime_type(accepted):
+def path_post_html(short_id: str, post_id: str) -> Response:
+	accepted: Union[str, None] = flask.request.headers.get('Accept')
+	if accepted is not None and has_matching_mime_type(accepted):
 		resp = flask.Response("", 302)
 		resp.headers['Location'] = "%s/users/%s/posts/%s" % (ap["web_domain"], short_id, post_id)
 		return resp
@@ -449,19 +448,19 @@ def path_post_html(short_id: str, post_id: str):
 	return resp
 
 @app.route("/images/logo")
-def path_logo():
+def path_logo() -> Response:
 	global ap
 	
 	return flask.send_file(ap["logo"])
 
 @app.route("/images/header")
-def path_header():
+def path_header() -> Response:
 	global ap
 	
 	return flask.send_file(ap["header"])
 
 @app.route("/images/emojis/bill")
-def path_emoji_bill():
+def path_emoji_bill() -> Response:
 	global ap
 	
 	return flask.send_file(ap["emoji"])

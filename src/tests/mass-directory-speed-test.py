@@ -1,6 +1,7 @@
 import os, time, glob, humanize, datetime
 
-def scantree(path: str = os.path.join("data", "local"), n: int = 0):
+
+def scantree(path: str = os.path.join("data", "local"), n: int = 0) -> int:
     for entry in os.scandir(path=path):
         if entry.is_dir():
             n = scantree(path=os.path.join(path, entry.name), n=n)
@@ -9,7 +10,7 @@ def scantree(path: str = os.path.join("data", "local"), n: int = 0):
     
     return n
 
-def listtree(path: str = os.path.join("data", "local"), n: int = 0):
+def listtree(path: str = os.path.join("data", "local"), n: int = 0) -> int:
     for entry in os.listdir(path=path):
         if os.path.isdir(os.path.join(path, entry)):
             n = listtree(path=os.path.join(path, entry), n=n)
@@ -18,36 +19,38 @@ def listtree(path: str = os.path.join("data", "local"), n: int = 0):
     
     return n
 
-def scandir():
+def scandir() -> None:
     n, t = 0, time.time()
-    n = scantree(path=os.path.join("data", "local"), n=0)
+    n: int = scantree(path=os.path.join("data", "local"), n=0)
 
-    t = time.time() - t
+    t: float = time.time() - t
     print("os.scandir (scantree): %s, %s files found\n" % (humanize.naturaldelta(datetime.timedelta(seconds=t)), humanize.intcomma(n)))
 
-def listdir():
+def listdir() -> None:
     n, t = 0, time.time()
-    n = listtree(path=os.path.join("data", "local"), n=0)
+    n: int = listtree(path=os.path.join("data", "local"), n=0)
 
-    t = time.time() - t
+    t: float = time.time() - t
     print("os.listdir (listtree): %s, %s files found\n" % (humanize.naturaldelta(datetime.timedelta(seconds=t)), humanize.intcomma(n)))
 
-def iglob():
-    n, t = 0, time.time()
+def iglob() -> None:
+    n: int = 0
+    t: float = time.time()
     for _ in glob.iglob(pathname="data/local/**/*.json", recursive=True):
         n += 1
 
-    t = time.time() - t
+    t: float = time.time() - t
     print("glob.iglob: %s, %s files found\n" % (humanize.naturaldelta(datetime.timedelta(seconds=t)), humanize.intcomma(n)))
 
-def walk():
-    n, t = 0, time.time()
+def walk() -> None:
+    n: int = 0
+    t: float = time.time()
     for _, _, files in os.walk(top=os.path.join("data", "local")):
         for file in files:
             if file.endswith(".json"):
                 n += 1
 
-    t = time.time() - t
+    t: float = time.time() - t
     print("os.walk: %s, %s files found\n" % (humanize.naturaldelta(datetime.timedelta(seconds=t)), humanize.intcomma(n)))
 
 if __name__ == "__main__":

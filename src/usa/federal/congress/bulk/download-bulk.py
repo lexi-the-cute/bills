@@ -2,38 +2,43 @@ import os
 import json
 import requests
 
+from typing import Any
+from requests import Response
+from io import TextIOWrapper, BufferedWriter
+
+
 base_url: str = "https://www.govinfo.gov/bulkdata/json"
 
 headers: dict = {
 	"Accept": "application/json"
 }
 
-def save_local(key: str, body: str):
+def save_local(key: str, body: str) -> None:
 	path: str = os.path.dirname(key)
 	if not os.path.exists(path):
 		os.makedirs(path)
 	
-	file = open(key, 'w')
+	file: TextIOWrapper = open(key, 'w')
 	file.write(body)
 	file.close()
 
-def save_file_local(key: str, body: bytes):
+def save_file_local(key: str, body: bytes) -> None:
 	print("Saving File: %s" % key)
 	
 	path: str = os.path.dirname(key)
 	if not os.path.exists(path):
 		os.makedirs(path)
 	
-	file = open(key, 'wb')
+	file: BufferedWriter = open(key, 'wb')
 	file.write(body)
 	file.close()
 
 noskipagain = True
-def crawl_bulk_download(url: str):
+def crawl_bulk_download(url: str) -> None:
 	global noskipagain
 	
-	response = requests.get(url=url, headers=headers)
-	results = response.json()
+	response: Response = requests.get(url=url, headers=headers)
+	results: Any = response.json()
 	
 	skip = False
 	for section in results["files"]:
