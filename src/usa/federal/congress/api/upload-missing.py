@@ -22,7 +22,8 @@ def get_local_bills() -> Tuple[int, set[str]]:
     for file in scantree(path=os.path.join("data", "local")):
         total += 1
 
-        bills.add(file)
+        cleaned_path: str = os.path.sep.join(file.split(os.path.sep)[2:])
+        bills.add(cleaned_path)
 
         if total % 1000 == 0:
             current: float = time.time()
