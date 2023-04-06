@@ -5,8 +5,10 @@ import datetime
 import humanize
 
 from typing import Tuple
+from genericpath import isdir
 from botocore.paginate import PageIterator
 from mypy_boto3_s3 import S3Client, ListObjectsPaginator
+from mypy_boto3_s3.type_defs import GetObjectOutputTypeDef
 from download import scantree, get_s3_client, get_default_s3_bucket
 
 
@@ -49,6 +51,11 @@ def get_bucket_bills() -> Tuple[int, set[str]]:
             total += 1
 
             key: str = item["Key"]
+
+            # Skip State and Territory Level Bills
+            if not key.startswith("usa/federal"):
+                continue
+
             bills.add(key)
             # print(key)
         
@@ -68,6 +75,52 @@ def find_missing_entries(outer_set: set[str], inner_set: set[str]) -> set[str]:
             missing_items.add(outer_item)
 
     return missing_items
+
+def download_entries(missing_bills: set[str]) -> None:
+    s3: S3Client = get_s3_client()
+    bucket: str = get_default_s3_bucket()
+    
+    count: int = 0
+    total: int = len(missing_bills)
+    for bill in missing_bills:
+        file: str = os.path.join("data", "local", bill)
+        path: str = os.path.split(file)[0]
+        count += 1
+
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        if os.path.isdir(file):
+            continue
+
+        print("\033[KDownloading Missing File (%s/%s): %s" % (count, total, file), end="\r")
+        with open(file=file, mode="wb") as f:
+            contents: GetObjectOutputTypeDef = s3.get_object(
+                Bucket=bucket,
+                Key=bill
+            )
+
+            f.write(contents["Body"].read())
+    print("\n")
+
+def upload_entries(missing_bills: set[str]) -> None:
+    s3: S3Client = get_s3_client()
+    bucket: str = get_default_s3_bucket()
+
+    count: int = 0
+    total: int = len(missing_bills)
+    for bill in missing_bills:
+        file: str = os.path.join("data", "local", bill)
+
+        count += 1
+        print("\033[KUploading Missing File (%s/%s): %s" % (count, total, file), end="\r")
+        with open(file=file, mode="r") as f:
+            s3.put_object(
+                Bucket=bucket,
+                Body=f.read(),
+                Key=bill
+            )
+    print("\n")
 
 if __name__ == "__main__":
     local_count, local_bills = get_local_bills()
@@ -89,5 +142,8 @@ if __name__ == "__main__":
     print("Saving Items Missing From Local...")
     with open(file="/home/alexis/Desktop/missing-from-local.json", mode="w") as f:
         f.write(json.dumps(list(missing_bills_in_local)))
+
+    upload_entries(missing_bills=missing_bills_in_bucket)
+    download_entries(missing_bills=missing_bills_in_local)
 
     print("Done...")
