@@ -13,6 +13,7 @@ import requests
 
 from io import TextIOWrapper
 from requests import Response
+from mypy_boto3_s3 import S3Client  # This exists purely for strong typing boto3
 from typing import Generator, Optional
 from urllib.parse import urlparse, ParseResult
 
@@ -44,7 +45,7 @@ skipped: list = [
 ]
 
 def upload_file(key: str, body: str) -> None:
-    s3 = get_s3_client()
+    s3: S3Client = get_s3_client()
     bucket: str = get_default_s3_bucket()
 
     s3.put_object(
@@ -189,7 +190,7 @@ def scantree(path: str = os.path.join("data", "local")) -> Generator[str, None, 
 start_time: float = -1
 def read_bills() -> None:
     global start_time
-    start_time: float = time.time()
+    start_time = time.time()
 
     if not os.path.exists(os.path.join("data", "local")):
         os.makedirs(os.path.join("data", "local"))
@@ -231,7 +232,7 @@ def hide_cursor(hide: bool) -> None:
     else:
         print("\033[?25h", end="\r")
 
-def get_s3_client():
+def get_s3_client() -> S3Client:
     with open(os.path.join("data", "config.yml"), 'r') as fi:
         config: dict = yaml.safe_load(fi)
 
@@ -246,7 +247,7 @@ def get_s3_client():
 
     # TODO: Determine if there's a type that can allow autocompletion of methods such as s3.put_object(...)
     config = config["s3"]
-    s3 = boto3.client(
+    s3: S3Client = boto3.client(
         service_name='s3',
         aws_access_key_id=config['access_key_id'],
         aws_secret_access_key=config['secret_access_key'],
