@@ -101,7 +101,7 @@ def download_entries(missing_bills: set[str]) -> None:
             )
 
             f.write(contents["Body"].read())
-    print("\n")
+    # print("\n")
 
 def upload_entries(missing_bills: set[str]) -> None:
     s3: S3Client = get_s3_client()
@@ -120,7 +120,7 @@ def upload_entries(missing_bills: set[str]) -> None:
                 Body=f.read(),
                 Key=bill
             )
-    print("\n")
+    # print("\n")
 
 if __name__ == "__main__":
     local_count, local_bills = get_local_bills()

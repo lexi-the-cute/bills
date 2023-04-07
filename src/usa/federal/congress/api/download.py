@@ -1,4 +1,5 @@
 import os
+import re
 import csv
 import sys
 import json
@@ -11,7 +12,9 @@ import datetime
 import humanize
 import requests
 
-from io import TextIOWrapper
+from typing import Union
+from io import BufferedWriter, TextIOWrapper
+from re import Pattern, Match
 from requests import Response
 from mypy_boto3_s3 import S3Client  # This exists purely for strong typing boto3
 from typing import Generator, Optional
@@ -36,15 +39,15 @@ rename: dict = {
 }
 
 skipped: list = [
-    "www.congress.gov",
-    "clerk.house.gov",
-    "www.senate.gov",
-    "www.cbo.gov",
-    "api.data.gov",
-    # "api.congress.gov"
+    # "www.congress.gov",  # Non-Downloadable HTML and Downloadable Files (htm, pdf, txt, and xml) (e.g. https://www.congress.gov/amendment/110th-congress/senate-amendment/635 and https://www.congress.gov/110/crec/2007/03/23/CREC-2007-03-23-pt1-PgS3659-7.pdf)
+    "clerk.house.gov",  # Non-Download HTML and Downloadable XML (e.g. https://clerk.house.gov/Votes/2007586 and https://clerk.house.gov/evs/2007/roll237.xml)
+    "www.senate.gov",  # Non-Downloadable HTML and Downloadable XML (e.g. https://www.senate.gov/legislative/LIS/roll_call_votes/vote1101/vote_110_1_00366.htm and https://www.senate.gov/legislative/LIS/roll_call_votes/vote1101/vote_110_1_00366.xml)
+    "www.cbo.gov",  # Non-Downloadable HTML With Link To Downloadable PDF (e.g. https://www.cbo.gov/publication/19453 and https://www.cbo.gov/sites/default/files/110th-congress-2007-2008/costestimate/s10000.pdf)
+    "api.data.gov",  # JSON - No Access To API (e.g. https://api.data.gov/congress/v3/amendment/110/samdt/3346?format=json)
+    # "api.congress.gov"  # JSON
 ]
 
-def upload_file(key: str, body: str) -> None:
+def upload_file(key: str, body: Union[str,bytes]) -> None:
     s3: S3Client = get_s3_client()
     bucket: str = get_default_s3_bucket()
 
@@ -55,15 +58,20 @@ def upload_file(key: str, body: str) -> None:
     )
 
 # TODO: Figure out if I should optimize this and how to do it
-def save_local(key: str, body: str) -> None: # type: ignore
+def save_local(key: str, body: Union[str,bytes]) -> None: # type: ignore
     key: str = os.path.join("data", "local", key)
     path: str = os.path.dirname(key)
     if not os.path.exists(path):
         os.makedirs(path)
     
-    file: TextIOWrapper = open(key, 'w')
-    file.write(body)
-    file.close()
+    if type(body) is str:
+        text_file: TextIOWrapper = open(key, 'w')
+        text_file.write(body)
+        text_file.close()
+    elif type(body) is bytes:
+        binary_file: BufferedWriter = open(key, 'wb')
+        binary_file.write(body)
+        binary_file.close()
 
 def get_key(url: str) -> str:
     path: str = urlparse(url).path
@@ -100,6 +108,58 @@ def get_api_key() -> Generator[str, None, None]:
             current = 0
         else:
             current += 1
+
+letters_numbers_regex: Pattern[str] = re.compile(r"([a-zA-Z]*)([0-9]*)")
+def split_on_letters_numbers(text: str) -> Optional[Match[str]]:
+    global letters_numbers_regex
+
+    match: Optional[Match[str]] = re.match(pattern=letters_numbers_regex, string=text)
+    return match
+
+def get_text_version_key(url: str) -> Optional[str]:
+    # /102/bills/HCONRES188/BILLS-hconres188rs.htm -> usa/federal/congress/bills/102/hconres/188/text/rs.htm
+    # country/level/branch/form/session/type/number
+    path: str = urlparse(url).path
+    split: list[str] = path.split("/")[1:]
+    session: str = split[0]
+    form: str = split[1]
+
+    # Rename Folder To Our Format
+    if form in rename:
+        form: str = rename[form]
+
+    type_and_number: Optional[Match[str]] = split_on_letters_numbers(text=split[2])
+
+    if type_and_number is None:
+        return None
+
+    item_type: str = type_and_number.group(0)
+    number: str = type_and_number.group(1)
+    file: str = split[4]
+
+    return "usa/federal/congress/%s/%s/%s/%s/%s" % (form, session, item_type, number, file)
+
+
+def handle_non_json_file(response: Response, line: int, elapsed: str) -> None:
+    url: str = response.url
+    parsed: ParseResult = urlparse(url=url)
+
+    if parsed.netloc == "www.congress.gov":
+        allowed_extensions: list = ["htm", "pdf", "txt", "xml"]
+        extension: str = parsed.path.split(".")[-1]
+        if extension in allowed_extensions:
+            key: Optional[str] = get_text_version_key(url=url)
+
+            if key is None:
+                print("\033[K%s (%s elapsed) - Skipping File With Broken Key %s" % (humanize.intcomma(line), elapsed, url), end="\r")
+                return
+            
+            print("\033[K%s (%s elapsed) - Uploading File %s" % (humanize.intcomma(line), elapsed, key), end="\r")
+            body: bytes = response.content
+            save_local(key=key, body=body)
+            upload_file(key=key, body=body)
+    else:
+        print("\033[K%s (%s elapsed) - Skipping Unknown File %s" % (humanize.intcomma(line), elapsed, url), end="\r")
 
 # TODO: This global breaks reusability, consider making a class
 line: int = 0
@@ -142,7 +202,7 @@ def download_file(url: str) -> None: # type: ignore
 
     # TODO: Implement Handling Unknown File Types
     if content_type != "application/json":
-        print("\033[K%s (%s elapsed) - Skipping Unknown File %s" % (humanize.intcomma(line), elapsed, key), end="\r")
+        handle_non_json_file(response=response, line=line, elapsed=elapsed)
         return
 
     try:
@@ -341,7 +401,7 @@ def live_download() -> None:
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     hide_cursor(hide=True)
-    live_download()
-    count_bills()
+    # live_download()
+    # count_bills()
     read_bills()
     hide_cursor(hide=False)
