@@ -135,7 +135,7 @@ def get_text_version_key(url: str) -> Optional[str]:
 
     item_type: str = type_and_number.group(0)
     number: str = type_and_number.group(1)
-    file: str = split[4]
+    file: str = split[3]
 
     return "usa/federal/congress/%s/%s/%s/%s/%s" % (form, session, item_type, number, file)
 
