@@ -401,7 +401,7 @@ def live_download() -> None:
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     hide_cursor(hide=True)
-    # live_download()
-    # count_bills()
+    live_download()
+    count_bills()
     read_bills()
     hide_cursor(hide=False)
