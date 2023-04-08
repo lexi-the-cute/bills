@@ -170,7 +170,7 @@ def download_file(url: str, parent_key: str) -> None: # type: ignore
     response: Response = session.get(url=url, params=params)
     content_type: Optional[str] = response.headers.get('content-type')
 
-    # TODO: Implement Handling Unknown File Types
+    # TODO: Check if File Exists Before Downloading...
     if content_type != "application/json":
         handle_non_json_file(response=response, line=line, elapsed=elapsed, parent_key=parent_key)
         return
