@@ -126,12 +126,9 @@ def handle_non_json_file(response: Response, line: int, elapsed: str, parent_key
         extension: str = parsed.path.split(".")[-1]
         if extension in allowed_extensions:
             key: str = os.path.join(parent_key, "files", os.path.split(parsed.path)[1])
-            
-            print("\033[K%s (%s elapsed) - Downloading File %s - %s" % (humanize.intcomma(line), elapsed, key, url), end="\r")
-            # print()
-            # exit(0)
-
             body: bytes = response.content
+
+            print("\033[K%s (%s elapsed) - Downloading File %s - %s" % (humanize.intcomma(line), elapsed, key, url), end="\r")
             save_local(key=key, body=body)
             upload_file(key=key, body=body)
     else:
@@ -377,7 +374,7 @@ def live_download() -> None:
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     hide_cursor(hide=True)
-    # live_download()
+    live_download()
     count_bills()
     read_bills()
     hide_cursor(hide=False)
