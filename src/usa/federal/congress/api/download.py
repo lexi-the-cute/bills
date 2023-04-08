@@ -116,7 +116,6 @@ def split_on_letters_numbers(text: str) -> Optional[Match[str]]:
     match: Optional[Match[str]] = re.match(pattern=letters_numbers_regex, string=text)
     return match
 
-
 def handle_non_json_file(response: Response, line: int, elapsed: str, parent_key: str) -> None:
     url: str = response.url
     parsed: ParseResult = urlparse(url=url)
@@ -128,7 +127,7 @@ def handle_non_json_file(response: Response, line: int, elapsed: str, parent_key
             key: str = os.path.join(parent_key, "files", os.path.split(parsed.path)[1])
             body: bytes = response.content
 
-            print("\033[K%s (%s elapsed) - Downloading File %s - %s" % (humanize.intcomma(line), elapsed, key, url), end="\r")
+            print("\033[K%s (%s elapsed) - Downloading File %s" % (humanize.intcomma(line), elapsed, key), end="\r")
             save_local(key=key, body=body)
             upload_file(key=key, body=body)
     else:
