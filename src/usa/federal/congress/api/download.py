@@ -116,31 +116,8 @@ def split_on_letters_numbers(text: str) -> Optional[Match[str]]:
     match: Optional[Match[str]] = re.match(pattern=letters_numbers_regex, string=text)
     return match
 
-def get_text_version_key(url: str) -> Optional[str]:
-    # /102/bills/HCONRES188/BILLS-hconres188rs.htm -> usa/federal/congress/bills/102/hconres/188/text/rs.htm
-    # country/level/branch/form/session/type/number
-    path: str = urlparse(url).path
-    split: list[str] = path.split("/")[1:]
-    session: str = split[0]
-    form: str = split[1]
 
-    # Rename Folder To Our Format
-    if form in rename:
-        form: str = rename[form]
-
-    type_and_number: Optional[Match[str]] = split_on_letters_numbers(text=split[2])
-
-    if type_and_number is None:
-        return None
-
-    item_type: str = type_and_number.group(0)
-    number: str = type_and_number.group(1)
-    file: str = split[3]
-
-    return "usa/federal/congress/%s/%s/%s/%s/%s" % (form, session, item_type, number, file)
-
-
-def handle_non_json_file(response: Response, line: int, elapsed: str) -> None:
+def handle_non_json_file(response: Response, line: int, elapsed: str, parent_key: str) -> None:
     url: str = response.url
     parsed: ParseResult = urlparse(url=url)
 
@@ -148,13 +125,12 @@ def handle_non_json_file(response: Response, line: int, elapsed: str) -> None:
         allowed_extensions: list = ["htm", "pdf", "txt", "xml"]
         extension: str = parsed.path.split(".")[-1]
         if extension in allowed_extensions:
-            key: Optional[str] = get_text_version_key(url=url)
-
-            if key is None:
-                print("\033[K%s (%s elapsed) - Skipping File With Broken Key %s" % (humanize.intcomma(line), elapsed, url), end="\r")
-                return
+            key: str = os.path.join(parent_key, "files", os.path.split(parsed.path)[1])
             
-            print("\033[K%s (%s elapsed) - Uploading File %s" % (humanize.intcomma(line), elapsed, key), end="\r")
+            print("\033[K%s (%s elapsed) - Downloading File %s - %s" % (humanize.intcomma(line), elapsed, key, url), end="\r")
+            # print()
+            # exit(0)
+
             body: bytes = response.content
             save_local(key=key, body=body)
             upload_file(key=key, body=body)
@@ -165,7 +141,7 @@ def handle_non_json_file(response: Response, line: int, elapsed: str) -> None:
 line: int = 0
 session: requests.Session = requests.Session()
 api_key: Generator[str, None, None] = get_api_key()
-def download_file(url: str) -> None: # type: ignore
+def download_file(url: str, parent_key: str) -> None: # type: ignore
     global line
     global start_time
     global session
@@ -193,8 +169,6 @@ def download_file(url: str) -> None: # type: ignore
         "format": "json"
     }
 
-    print("\033[K%s (%s elapsed) - Downloading %s" % (humanize.intcomma(line), elapsed, key), end="\r")
-
     # TODO: Figure out how to stream file to s3 bucket and to local filesystem
     # TODO: Consider saving to OS' temporary folder and then moving from there, then uploading to S3
     response: Response = session.get(url=url, params=params)
@@ -202,7 +176,7 @@ def download_file(url: str) -> None: # type: ignore
 
     # TODO: Implement Handling Unknown File Types
     if content_type != "application/json":
-        handle_non_json_file(response=response, line=line, elapsed=elapsed)
+        handle_non_json_file(response=response, line=line, elapsed=elapsed, parent_key=parent_key)
         return
 
     try:
@@ -214,7 +188,7 @@ def download_file(url: str) -> None: # type: ignore
             if "message" in error:
                 print("\033[K%s (%s elapsed) - Waiting 60 Minutes To Try Again (%s): %s" % (humanize.intcomma(line), elapsed, url, response.text), end="\r")
                 time.sleep(60*60)
-                download_file(url=url)
+                download_file(url=url, parent_key=parent_key)
             elif "matches the given query" in error:
                 print("\033[K%s (%s elapsed) - DJango Error (%s): %s" % (humanize.intcomma(line), elapsed, url, error), end="\r")
                 log_error(url=url, message=error)
@@ -224,7 +198,7 @@ def download_file(url: str) -> None: # type: ignore
             
             return
         
-        print("\033[K%s (%s elapsed) - Uploading %s" % (humanize.intcomma(line), elapsed, key), end="\r")
+        print("\033[K%s (%s elapsed) - Downloading %s" % (humanize.intcomma(line), elapsed, key), end="\r")
 
         text: str = json.dumps(results)
         save_local(key=key, body=text)
@@ -234,10 +208,10 @@ def download_file(url: str) -> None: # type: ignore
         log_error(url=url, message=response.text)
 
 
-def parse_json(data: dict) -> None:
+def parse_json(data: dict, parent_key: str) -> None:
     for (_, value) in dpath.search(data, '**/url', yielded=True):
         # print("%s: %s" % (path, value))
-        download_file(url=value)
+        download_file(url=value, parent_key=parent_key)
 
 def scantree(path: str = os.path.join("data", "local")) -> Generator[str, None, None]:
     for entry in os.scandir(path=path):
@@ -260,7 +234,8 @@ def read_bills() -> None:
         data: bytes = os.read(fd, os.fstat(fd).st_size)
         contents: dict = json.loads(data)
 
-        parse_json(data=contents)
+        parent_key: str = "/".join(file.split(sep=os.path.sep)[2:-1])
+        parse_json(data=contents, parent_key=parent_key)
         os.close(fd)
 
     print(end="\n")
@@ -395,13 +370,14 @@ def live_download() -> None:
             for (_, value) in dpath.search(results, '**/url', yielded=True):
                 # print("%s: %s" % (path, value))
                 # print("\033[K%s - %s" % (value, response.url))
-                download_file(url=value)
+                parent_key: str = "/".join(get_key(url=value).split(sep=os.path.sep)[:-1])
+                download_file(url=value, parent_key=parent_key)
 
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     hide_cursor(hide=True)
-    live_download()
+    # live_download()
     count_bills()
     read_bills()
     hide_cursor(hide=False)
