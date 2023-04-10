@@ -2,7 +2,10 @@ import os
 import yaml
 import pandas as pd
 
-def get_database():
+from pandas import DataFrame
+from typing import Union, Any
+
+def get_database() -> Union[str, Any]:
     with open(os.path.join("data", "config.yml"), 'r') as fi:
         config: dict = yaml.safe_load(fi)
     
@@ -16,7 +19,7 @@ def get_database():
     return url
 
 def read_sql():
-    rows = pd.read_sql(sql='select * from bills;', con=get_database())
+    rows: DataFrame = pd.read_sql(sql='select * from bills;', con=get_database())
     print(rows)
 
 if __name__ == "__main__":
