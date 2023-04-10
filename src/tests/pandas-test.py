@@ -1,6 +1,9 @@
 import os
 import yaml
+import pandasgui
 import pandas as pd
+
+# PyPi version is old, install from https://github.com/adamerose/PandasGUI/issues/220#issuecomment-1464882333
 
 from pandas import DataFrame
 from typing import Union, Any
@@ -18,9 +21,14 @@ def get_database() -> Union[str, Any]:
 
     return url
 
-def read_sql():
-    rows: DataFrame = pd.read_sql(sql='select * from bills;', con=get_database())
-    print(rows)
+def read_sql() -> DataFrame:
+    return pd.read_sql(sql='select * from bills;', con=get_database())
 
 if __name__ == "__main__":
-    read_sql()
+    df: DataFrame = read_sql()
+
+    print(df)
+    # for row in df.iterrows():
+    #     print(row)
+
+    pandasgui.show(df)
