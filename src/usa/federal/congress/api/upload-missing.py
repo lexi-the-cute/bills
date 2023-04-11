@@ -50,7 +50,7 @@ def get_bucket_bills() -> Tuple[int, set[str]]:
         for item in page["Contents"]:
             total += 1
 
-            key: str = item["Key"]
+            key: str = item["Key"] # type: ignore
 
             # Skip State and Territory Level Bills
             if not key.startswith("usa/federal"):
@@ -93,7 +93,7 @@ def download_entries(missing_bills: set[str]) -> None:
         if os.path.isdir(file):
             continue
 
-        print("\033[KDownloading Missing File (%s/%s): %s" % (count, total, file), end="\r")
+        print("\033[KDownloading Missing File (%s/%s): %s" % (humanize.intcomma(count), humanize.intcomma(total), file), end="\r")
         with open(file=file, mode="wb") as f:
             contents: GetObjectOutputTypeDef = s3.get_object(
                 Bucket=bucket,
@@ -113,7 +113,7 @@ def upload_entries(missing_bills: set[str]) -> None:
         file: str = os.path.join("data", "local", bill)
 
         count += 1
-        print("\033[KUploading Missing File (%s/%s): %s" % (count, total, file), end="\r")
+        print("\033[KUploading Missing File (%s/%s): %s" % (humanize.intcomma(count), humanize.intcomma(total), file), end="\r")
         with open(file=file, mode="r") as f:
             s3.put_object(
                 Bucket=bucket,
@@ -130,9 +130,9 @@ if __name__ == "__main__":
     missing_bills_in_local: set = find_missing_entries(outer_set=bucket_bills, inner_set=local_bills)
 
     print("-"*40)
-    print("Total Local: %s, Total Bucket: %s" % (local_count, bucket_count))
-    print("Total Missing From Bucket: %s" % len(missing_bills_in_bucket))
-    print("Total Missing From Local: %s" % len(missing_bills_in_local))
+    print("Total Local: %s, Total Bucket: %s" % (humanize.intcomma(local_count), humanize.intcomma(bucket_count)))
+    print("Total Missing From Bucket: %s" % humanize.intcomma(len(missing_bills_in_bucket)))
+    print("Total Missing From Local: %s" % humanize.intcomma(len(missing_bills_in_local)))
 
     print("-"*40)
     print("Saving Items Missing From Bucket...")

@@ -8,6 +8,7 @@ import pandas as pd
 from pandas import DataFrame
 from typing import Union, Any
 
+
 def get_database() -> Union[str, Any]:
     with open(os.path.join("data", "config.yml"), 'r') as fi:
         config: dict = yaml.safe_load(fi)

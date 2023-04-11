@@ -229,6 +229,7 @@ def read_bills() -> None:
         fd: int = os.open(file, os.O_RDONLY)
         data: bytes = os.read(fd, os.fstat(fd).st_size)
         contents: dict = json.loads(data)
+        os.close(fd=fd)
 
         parent_key: str = "/".join(file.split(sep=os.path.sep)[2:-1])
         parse_json(data=contents, parent_key=parent_key)
