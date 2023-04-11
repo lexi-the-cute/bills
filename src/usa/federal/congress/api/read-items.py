@@ -1,4 +1,5 @@
 import os
+import csv
 import json
 import time
 import yaml
@@ -146,7 +147,7 @@ def save_dataframes(**kwargs: DataFrame) -> None:
             print("Found argument of type: `%s`, Skipping..." % type(kwargs[kwarg]))
             continue
 
-        kwargs[kwarg].to_csv(path_or_buf=os.path.join("data", "csv", "%s.csv" % kwarg))
+        kwargs[kwarg].to_csv(path_or_buf=os.path.join("data", "csv", "%s.csv" % kwarg), quoting=csv.QUOTE_NONNUMERIC, quotechar='"')
 
 def read_sql() -> DataFrame:
     return pd.read_sql(sql='select * from bills;', con=get_database())
