@@ -26,6 +26,10 @@ def process_possible_keys(file: str, possible_keys: dict) -> dict:
         del(contents["request"])
 
     for entry in contents:
+        # Skip Custom Lists I've Made
+        if type(entry) is str:
+            continue
+
         if entry not in possible_keys:
             possible_keys[entry] = set()
 
@@ -95,6 +99,10 @@ def get_dataframes(possible_keys: dict) -> dict:
 
         # TODO: Determine if should change name to be less confusing
         file_records: dict = get_records(file=file)
+
+        # Skip Custom Lists I've Made
+        if type(file_records) is list:
+            continue
 
         for entry in file_records.keys():
             if entry not in records:
