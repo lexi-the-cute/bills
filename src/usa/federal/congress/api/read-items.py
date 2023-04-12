@@ -27,7 +27,7 @@ def process_possible_keys(file: str, possible_keys: dict) -> dict:
 
     for entry in contents:
         # Skip Custom Lists I've Made
-        if type(entry) is str:
+        if type(contents[entry]) is str:
             continue
 
         if entry not in possible_keys:
@@ -161,9 +161,11 @@ def save_possible_keys(possible_keys: dict) -> None:
     if not os.path.exists("data"):
         os.makedirs("data")
 
-    fd: int = os.open(os.path.join("data", "possible_keys.json"), os.O_WRONLY)
-    os.write(fd, bytes(json.dumps(possible_keys), encoding="utf-8"))
-    os.close(fd=fd)
+    # default=list tells the json dumper to treat every unknown object as a list
+    # The only unknown objects are sets, which are basically lists, but with unique entries.
+    # sets convert seamlessly to lists
+    with open(file=os.path.join("data", "possible_keys.json"), mode="w") as f:
+        f.write(json.dumps(obj=possible_keys, default=list))
 
 def read_sql() -> DataFrame:
     return pd.read_sql(sql='select * from bills;', con=get_database())
