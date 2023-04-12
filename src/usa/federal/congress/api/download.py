@@ -233,7 +233,6 @@ def read_bills() -> None:
 
         parent_key: str = "/".join(file.split(sep=os.path.sep)[2:-1])
         parse_json(data=contents, parent_key=parent_key)
-        os.close(fd)
 
     print(end="\n")
     print("Finished Downloading Bills...", end="\n")
