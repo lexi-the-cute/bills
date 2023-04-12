@@ -5,7 +5,7 @@ import time
 import yaml
 import datetime
 import humanize
-import pandasgui
+# import pandasgui
 import pandas as pd
 
 from pandas import DataFrame
@@ -157,14 +157,27 @@ def save_dataframes(**kwargs: DataFrame) -> None:
 
         kwargs[kwarg].to_csv(path_or_buf=os.path.join("data", "csv", "%s.csv" % kwarg), quoting=csv.QUOTE_NONNUMERIC, quotechar='"')
 
+def save_possible_keys(possible_keys: dict) -> None:
+    if not os.path.exists("data"):
+        os.makedirs("data")
+
+    fd: int = os.open(os.path.join("data", "possible_keys.json"), os.O_WRONLY)
+    os.write(fd, bytes(json.dumps(possible_keys), encoding="utf-8"))
+    os.close(fd=fd)
+
 def read_sql() -> DataFrame:
     return pd.read_sql(sql='select * from bills;', con=get_database())
 
 if __name__ == "__main__":
-    possible_keys: dict = get_possible_keys()
-    dataframes: dict = get_dataframes(possible_keys=possible_keys)
-    save_dataframes(**dataframes)
-    pandasgui.show(**dataframes)
+    possible_keys: dict = get_possible_keys()  # Get Possible Keys
+    save_possible_keys(possible_keys=possible_keys)  # Save Possible Keys To File For Debugging
+
+    # TODO: Consider Only Loading One DataFrame At A Time
+    dataframes: dict = get_dataframes(possible_keys=possible_keys)  # Get DataFrames
+    del possible_keys  # Delete Possible Keys (To Save RAM)
+
+    save_dataframes(**dataframes)  # Save DataFrames To File For Debugging
+    # pandasgui.show(**dataframes)  # Show DataFrames To User
 
     # df: DataFrame = read_sql()
 
