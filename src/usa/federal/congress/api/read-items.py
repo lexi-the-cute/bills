@@ -123,17 +123,24 @@ def get_dataframes(possible_keys: dict) -> dict:
             elapsed: str = humanize.naturaldelta(datetime.timedelta(seconds=(current-start)))
             print("\033[K(DataFrames[]) Files: %s\tElapsed: %s" % (humanize.intcomma(total), elapsed), end="\r")
 
-    dataframes: dict = {}
-    for record in records.keys():
-        # if record not in dataframes:
-        # print("%s - %s" % (json.dumps(records[record]), json.dumps(list(possible_keys[record]))))
-        dataframes[record] = pd.DataFrame.from_records(data=records[record], columns=possible_keys[record])
-        dataframes[record].name = record
-
     print("\033[K(DataFrames[]) Total Files: %s\tElapsed: %s" % (humanize.intcomma(total), elapsed), end="\n")
     print("-"*40, end="\n")
 
-    # print("DataFrames: %s" % dataframes)
+    total: int = len(records.keys())
+    start: float = time.time()
+    elapsed: str = humanize.naturaldelta(0)
+    dataframes: dict = {}
+    for record in records.keys():
+        dataframes[record] = pd.DataFrame.from_records(data=records[record], columns=possible_keys[record])
+        dataframes[record].name = record
+        del records[record]  # Delete Record Key (To Save RAM)
+
+        current: float = time.time()
+        elapsed: str = humanize.naturaldelta(datetime.timedelta(seconds=(current-start)))
+        print("\033[K(DataFrames[]) Records: %s\tElapsed: %s" % (humanize.intcomma(total), elapsed), end="\r")
+
+    print("\033[K(DataFrames[]) Total Records: %s\tElapsed: %s" % (humanize.intcomma(total), elapsed), end="\n")
+    print("-"*40, end="\n")
 
     return dataframes
 
@@ -150,7 +157,7 @@ def get_database() -> Union[str, Any]:
 
     return url
 
-def save_dataframes(**kwargs: DataFrame) -> None:
+def save_dataframes(delete_after_save: bool = False, **kwargs: DataFrame) -> None:
     if not os.path.exists(os.path.join("data", "csv")):
         os.makedirs(os.path.join("data", "csv"))
 
@@ -160,6 +167,9 @@ def save_dataframes(**kwargs: DataFrame) -> None:
             continue
 
         kwargs[kwarg].to_csv(path_or_buf=os.path.join("data", "csv", "%s.csv" % kwarg), quoting=csv.QUOTE_NONNUMERIC, quotechar='"')
+        
+        if delete_after_save:
+            del kwargs[kwarg]  # Delete DataFrame (To Save RAM)
 
 def save_possible_keys(possible_keys: dict) -> None:
     if not os.path.exists("data"):
@@ -182,7 +192,7 @@ if __name__ == "__main__":
     dataframes: dict = get_dataframes(possible_keys=possible_keys)  # Get DataFrames
     del possible_keys  # Delete Possible Keys (To Save RAM)
 
-    save_dataframes(**dataframes)  # Save DataFrames To File For Debugging
+    save_dataframes(**dataframes, delete_after_save=True)  # Save DataFrames To File For Debugging
     # pandasgui.show(**dataframes)  # Show DataFrames To User
 
     # df: DataFrame = read_sql()
