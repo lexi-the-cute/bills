@@ -19,6 +19,10 @@ def process_possible_keys(file: str, possible_keys: dict) -> dict:
     contents: dict = json.loads(data)
     os.close(fd=fd)
 
+    # Skip Custom Lists I've Made
+    if type(contents) is list:
+        return possible_keys
+
     if "pagination" in contents:
         del(contents["pagination"])
     
@@ -26,9 +30,9 @@ def process_possible_keys(file: str, possible_keys: dict) -> dict:
         del(contents["request"])
 
     for entry in contents:
-        # Skip Custom Lists I've Made
-        if type(contents[entry]) is str:
-            continue
+        # Skip Custom Lists I've Made (May Be Unnecessary)
+        # if type(contents[entry]) is str:
+        #     continue
 
         if entry not in possible_keys:
             possible_keys[entry] = set()
