@@ -7,7 +7,7 @@ import humanize
 
 from download import scantree
 
-def mark_files() -> dict:
+def mark_files() -> None:
     total: int = 0
     start: float = time.time()
     elapsed: str = humanize.naturaldelta(0)
