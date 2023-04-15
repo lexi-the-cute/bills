@@ -55,7 +55,7 @@ def mark_files() -> dict:
     print("-"*40, end="\n")
 
     for file in files.keys():
-        files[file].close()
+        files[file]["fd"].close()
 
 if __name__ == "__main__":
     mark_files()
