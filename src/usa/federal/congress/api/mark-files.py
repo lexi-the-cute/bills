@@ -39,7 +39,7 @@ def mark_files() -> dict:
 
         for entry in contents:
             if entry not in files:
-                file_path: str = os.path.join("data", "mark", "%s.csv" % entry)
+                file_path: str = os.path.join("data", "mark", "%s.list" % entry)
                 files[entry] = {}
                 files[entry]["fd"] = open(file_path, mode="w")
                 files[entry]["writer"] = csv.writer(files[entry]["fd"])
